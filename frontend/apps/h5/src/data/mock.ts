@@ -47,9 +47,41 @@ export const stalls = [
 ]
 
 export const userOrders = [
-  { id: 1001, stall: '烟火小摊', status: '待取餐', amount: '32.00', time: '今天 18:30' },
-  { id: 1002, stall: '乡野新农人鲜铺', status: '已完成', amount: '46.50', time: '昨天 12:10' }
+  {
+    id: 1001,
+    stall: '烟火小摊',
+    status: '待取餐',
+    amount: '32.00',
+    time: '今天 18:30',
+    contact: '138****6201',
+    address: '北站中心公园东门',
+    items: [
+      { name: '招牌汤粉', quantity: 2, price: '16.00' }
+    ],
+    timeline: ['订单已创建', '摊主已接单', '备货中', '待取餐']
+  },
+  {
+    id: 1002,
+    stall: '乡野新农人鲜铺',
+    status: '已完成',
+    amount: '46.50',
+    time: '昨天 12:10',
+    contact: '136****9128',
+    address: '市民广场南侧临时摊区',
+    items: [
+      { name: '当季蔬果', quantity: 1, price: '28.50' },
+      { name: '手工辣酱', quantity: 1, price: '18.00' }
+    ],
+    timeline: ['订单已创建', '摊主已接单', '已取餐', '已完成']
+  }
 ]
+
+export const userComplaints = [
+  { id: 5001, target: '烟火小摊', type: '卫生问题', status: '处理中', updatedAt: '今天 14:20', description: '现场卫生需要进一步核实。' },
+  { id: 5002, target: '市民广场摊区', type: '占道经营', status: '已办结', updatedAt: '昨天 16:30', description: '监管人员已现场处理并反馈。' }
+]
+
+export const reviewMetrics = ['卫生', '服务', '品质', '性价比']
 
 export const vendorTasks = [
   { title: '入驻审核', value: '待补充资质', status: 'warning' },
