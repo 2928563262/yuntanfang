@@ -213,6 +213,14 @@ H5 用户端和商家端：
 - 优化侧边栏品牌区、菜单 hover/active、顶部用户入口、指标卡、筛选区、表格、待办流程和登录页。
 - 验证命令：`corepack pnpm --filter @yuntanfang/admin build`。
 
+### 2026-06-06 功能说明书第一批页面补齐
+
+- 用户端新增 `/recommendations`、`/agent-order`、`/stories`，覆盖推荐结果、智能点单和摊主故事流骨架。
+- 首页和“我的”接入上述新入口。
+- 商家端新增 `/vendor/location-recommendations` 和 `/vendor/stories/create`，覆盖选址推荐和故事发布骨架。
+- 管理后台新增推荐监控、Agent 会话、标签管理、信用分管理、数据上报、政务数据导入菜单与 mock 配置。
+- 更新 `docs/frontend-page-gap-analysis.md` 标记本批已补页面。
+
 ## 交接提示
 
 后续 AI 接手时先读：

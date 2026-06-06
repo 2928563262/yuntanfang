@@ -138,12 +138,12 @@ const filteredStalls = computed(() => {
 })
 
 const quickActions = [
-  { title: '附近摊位', desc: '按距离找摊', icon: 'location-o', to: '/stalls' },
-  { title: '预约取餐', desc: '先下单后取', icon: 'todo-list-o', to: '/stalls/1/reserve' },
+  { title: '智能推荐', desc: '理由排序', icon: 'fire-o', to: '/recommendations' },
+  { title: '智能点单', desc: '一句话预约', icon: 'chat-o', to: '/agent-order' },
+  { title: '附近故事', desc: '摊主动态', icon: 'photo-o', to: '/stories' },
   { title: '我的订单', desc: '查看取餐状态', icon: 'orders-o', to: '/orders' },
   { title: '收藏关注', desc: '常逛摊位', icon: 'star-o', to: '/favorites' },
-  { title: '提交投诉', desc: '问题留痕', icon: 'warning-o', to: '/complaints/create' },
-  { title: '消息中心', desc: '提醒通知', icon: 'chat-o', to: '/messages' }
+  { title: '提交投诉', desc: '问题留痕', icon: 'warning-o', to: '/complaints/create' }
 ]
 
 const notices = [

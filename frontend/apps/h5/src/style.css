@@ -1046,6 +1046,85 @@ a.card:hover,
   transform: translateY(-2px);
 }
 
+.agent-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.agent-messages {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-bubble {
+  max-width: 82%;
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.6;
+}
+
+.agent-assistant {
+  justify-self: start;
+  background: rgba(47, 111, 100, 0.08);
+}
+
+.agent-user {
+  justify-self: end;
+  color: #ffffff;
+  background: #2f6f64;
+}
+
+.agent-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.agent-input input {
+  min-height: 42px;
+  border: 1px solid var(--ytf-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.story-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.story-card {
+  overflow: hidden;
+  border: 1px solid var(--ytf-line);
+  border-radius: 8px;
+  background: var(--ytf-card);
+  box-shadow: var(--ytf-shadow);
+}
+
+.story-image {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  color: #fff8ef;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.28), transparent 26%),
+    linear-gradient(135deg, #2f6f64, #ff7c3f);
+  font-family: "STZhongsong", "Songti SC", serif;
+  font-size: 42px;
+  font-weight: 900;
+}
+
+.story-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.vendor-map {
+  min-height: 220px;
+  margin-bottom: 12px;
+}
+
 .desktop-only {
   display: none;
 }
@@ -1274,6 +1353,10 @@ a.card:hover,
 
   .home-stall-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .story-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .zone-grid {

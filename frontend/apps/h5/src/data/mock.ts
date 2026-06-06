@@ -46,6 +46,24 @@ export const stalls = [
   }
 ]
 
+export const recommendationCards = [
+  { stallId: 1, name: '烟火小摊', score: '92', reason: '你常浏览地方特色，且距离最近', waitTime: '约 8 分钟', tags: ['热汤粉', '取餐快', '夜市热摊'] },
+  { stallId: 2, name: '乡野新农人鲜铺', score: '86', reason: '助农专区高评分，适合午市采购', waitTime: '约 5 分钟', tags: ['新鲜蔬果', '农家直供', '高复购'] },
+  { stallId: 3, name: '守艺糖画铺', score: '81', reason: '附近热门故事互动高，适合亲子打卡', waitTime: '约 12 分钟', tags: ['非遗体验', '亲子', '故事热度'] }
+]
+
+export const agentMessages = [
+  { role: 'assistant', content: '我可以帮你把“老样子”“张阿姨的煎饼”解析成预约订单。' },
+  { role: 'user', content: '帮我订烟火小摊的招牌汤粉，两份，18:30 取。' },
+  { role: 'assistant', content: '已识别：烟火小摊，招牌汤粉 x2，预计等待 8 分钟。' }
+]
+
+export const vendorStoryFeed = [
+  { id: 1, vendor: '林师傅', stall: '烟火小摊', content: '凌晨四点熬汤底，今天第一锅汤粉已经准备好。', likes: 128, comments: 18, time: '今天 07:20', tags: ['手作', '热汤粉'] },
+  { id: 2, vendor: '陈小禾', stall: '乡野新农人鲜铺', content: '今天带来刚采的番茄和土鸡蛋，午市在市民广场南侧。', likes: 96, comments: 11, time: '今天 10:10', tags: ['助农', '鲜货'] },
+  { id: 3, vendor: '周老师', stall: '守艺糖画铺', content: '周六下午做生肖糖画体验，欢迎带孩子来老街口。', likes: 203, comments: 34, time: '昨天 18:40', tags: ['非遗', '亲子'] }
+]
+
 export const userOrders = [
   {
     id: 1001,
@@ -109,6 +127,7 @@ export const vendorTasks = [
 export const vendorMenu = [
   { title: '商家开店', path: '/vendor/apply', desc: '线上备案、身份和资质材料' },
   { title: '资质管理', path: '/vendor/qualifications', desc: '健康证、摊车照片、经营照片' },
+  { title: '选址推荐', path: '/vendor/location-recommendations', desc: '人流评分、竞争指数和可用点位' },
   { title: '摊位出摊', path: '/vendor/stalls', desc: '预约、日历、打卡、临时休摊' },
   { title: '商品管理', path: '/vendor/products', desc: '商品、图片、视频、全景占位' },
   { title: '订单处理', path: '/vendor/orders', desc: '接单、拒单、备货状态' },
@@ -118,6 +137,12 @@ export const vendorMenu = [
   { title: '分享推广', path: '/vendor/share', desc: '摊位链接、二维码、海报占位' },
   { title: '商家设置', path: '/vendor/settings', desc: '账号安全、打印机、快捷短语' },
   { title: '帮助中心', path: '/vendor/help', desc: '开店、资质、订单处理说明' }
+]
+
+export const locationRecommendations = [
+  { area: '北站中心公园东门', trafficScore: 88, competition: '中', sameCategory: 2, available: 6, reason: '夜市人流稳定，同品类摊位可控。' },
+  { area: '市民广场南侧临时摊区', trafficScore: 76, competition: '低', sameCategory: 1, available: 4, reason: '午市客流集中，适合农家特产。' },
+  { area: '老街口文创夜市', trafficScore: 82, competition: '高', sameCategory: 5, available: 2, reason: '游客多，但同质化偏高，建议差异化商品。' }
 ]
 
 export const vendorQualifications = [

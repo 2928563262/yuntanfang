@@ -16,6 +16,12 @@ export const adminMenus = [
   { path: '/violations', title: '违规记录' },
   { path: '/policies', title: '政策公告' },
   { path: '/notices', title: '通知管理' },
+  { path: '/recommendation-logs', title: '推荐监控' },
+  { path: '/agent-sessions', title: 'Agent 会话' },
+  { path: '/vendor-tags', title: '标签管理' },
+  { path: '/credit-scores', title: '信用分管理' },
+  { path: '/reports', title: '数据上报' },
+  { path: '/data-imports', title: '政务数据导入' },
   { path: '/users', title: '用户管理' },
   { path: '/roles', title: '角色权限' },
   { path: '/system', title: '系统设置' }

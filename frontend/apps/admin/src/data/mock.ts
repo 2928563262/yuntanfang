@@ -11,6 +11,12 @@ export type AdminModule =
   | 'violation'
   | 'policy'
   | 'notice'
+  | 'recommendationLog'
+  | 'agentSession'
+  | 'vendorTag'
+  | 'creditScore'
+  | 'report'
+  | 'dataImport'
   | 'user'
   | 'role'
   | 'system'
@@ -280,6 +286,114 @@ export const adminModuleConfigs: Record<string, AdminModuleConfig> = {
       { id: 91002, name: '审核结果通知', owner: '审核系统', category: '网页通知', status: '待发送', updatedAt: '今天 12:00' }
     ]
   },
+  '/recommendation-logs': {
+    module: 'recommendationLog',
+    title: '推荐监控',
+    eyebrow: '曝光、点击、转化和推荐理由',
+    primaryAction: '导出日志',
+    filters: ['今日', '已点击', '已下单', '冷启动规则', '协同过滤'],
+    metrics: [
+      { label: '曝光', value: 3280, hint: '首页推荐位' },
+      { label: '点击率', value: '18.6%', hint: '+2.1%' },
+      { label: '转化订单', value: 86, hint: '推荐来源' },
+      { label: '平均分数', value: '0.812', hint: '规则模型' }
+    ],
+    columns: auditColumns,
+    rows: [
+      { id: 130001, name: '烟火小摊推荐', owner: 'test1', category: '距离+评分', status: '已点击', updatedAt: '今天 18:01' },
+      { id: 130002, name: '守艺糖画铺推荐', owner: 'test1', category: '故事热度', status: '已曝光', updatedAt: '今天 17:20' }
+    ]
+  },
+  '/agent-sessions': {
+    module: 'agentSession',
+    title: 'Agent 会话',
+    eyebrow: '自然语言点单、解析和降级',
+    primaryAction: '查看失败样本',
+    filters: ['active', 'completed', 'cancelled', 'fallback'],
+    metrics: [
+      { label: '今日会话', value: 42, hint: '智能点单' },
+      { label: '成功下单', value: 18, hint: '转化 42.8%' },
+      { label: '需追问', value: 9, hint: '商品不明确' },
+      { label: '降级', value: 3, hint: 'LLM timeout' }
+    ],
+    columns: auditColumns,
+    rows: [
+      { id: 140001, name: '招牌汤粉 x2', owner: 'test1', category: 'create_order', status: 'completed', updatedAt: '今天 18:03' },
+      { id: 140002, name: '老样子', owner: '陈同学', category: 'clarify', status: 'active', updatedAt: '今天 17:58' }
+    ]
+  },
+  '/vendor-tags': {
+    module: 'vendorTag',
+    title: '标签管理',
+    eyebrow: 'AI 口碑标签与官方荣誉标签',
+    primaryAction: '颁发荣誉',
+    filters: ['口碑标签', '荣誉标签', '待审核', '已撤销'],
+    metrics: [
+      { label: '活跃标签', value: 186, hint: '前台展示' },
+      { label: '待审核', value: 12, hint: 'AI 生成' },
+      { label: '荣誉标签', value: 28, hint: '人工颁发' },
+      { label: '即将过期', value: 4, hint: '30 天内' }
+    ],
+    columns: auditColumns,
+    rows: [
+      { id: 150001, name: '深夜守候', owner: '烟火小摊', category: '口碑标签', status: '待审核', updatedAt: '今天 12:30' },
+      { id: 150002, name: '食品安全达标', owner: '乡野新农人鲜铺', category: '荣誉标签', status: '展示中', updatedAt: '昨天 16:20' }
+    ]
+  },
+  '/credit-scores': {
+    module: 'creditScore',
+    title: '信用分管理',
+    eyebrow: '加减分、违规联动和分配优先级',
+    primaryAction: '导出明细',
+    filters: ['90 分以上', '80-89', '低于80', '本周变动'],
+    metrics: [
+      { label: '平均信用分', value: 91, hint: '+1.2' },
+      { label: '低分预警', value: 5, hint: '低于 80' },
+      { label: '投诉扣分', value: 7, hint: '本周' },
+      { label: '荣誉加分', value: 11, hint: '本月' }
+    ],
+    columns: auditColumns,
+    rows: [
+      { id: 160001, name: '烟火小摊', owner: '林师傅', category: '地方特色', status: '96', updatedAt: '今天 10:00' },
+      { id: 160002, name: '示例摊主', owner: '王师傅', category: '烧烤', status: '72', updatedAt: '昨天 09:20' }
+    ]
+  },
+  '/reports': {
+    module: 'report',
+    title: '数据上报',
+    eyebrow: '周报、月报、政务报表导出',
+    primaryAction: '生成月报',
+    filters: ['周报', '月报', '区域报表', '投诉率'],
+    metrics: [
+      { label: '本月报表', value: 8, hint: '已生成' },
+      { label: '摊位使用率', value: '68%', hint: '高峰 19:00' },
+      { label: '投诉率', value: '1.8%', hint: '-0.4%' },
+      { label: '导出次数', value: 26, hint: 'CSV/PDF' }
+    ],
+    columns: auditColumns,
+    rows: [
+      { id: 170001, name: '6月摊位使用率月报', owner: '系统', category: '月报', status: '已生成', updatedAt: '今天 08:00' },
+      { id: 170002, name: '北站区域周报', owner: '运营一组', category: '周报', status: '草稿', updatedAt: '昨天 18:00' }
+    ]
+  },
+  '/data-imports': {
+    module: 'dataImport',
+    title: '政务数据导入',
+    eyebrow: 'Excel/CSV 区域、摊位和责任人导入',
+    primaryAction: '上传文件',
+    filters: ['待校验', '导入成功', '导入失败', '字段映射'],
+    metrics: [
+      { label: '导入批次', value: 12, hint: '累计' },
+      { label: '待校验', value: 2, hint: '字段映射' },
+      { label: '成功率', value: '96%', hint: '近30天' },
+      { label: '新增点位', value: 38, hint: '本月' }
+    ],
+    columns: auditColumns,
+    rows: [
+      { id: 180001, name: '北站区域点位.xlsx', owner: '城管接口', category: '摊位点位', status: '待校验', updatedAt: '今天 11:40' },
+      { id: 180002, name: '责任人通讯录.csv', owner: '监管一组', category: '责任人', status: '导入成功', updatedAt: '昨天 17:10' }
+    ]
+  },
   '/users': {
     module: 'user',
     title: '用户管理',
@@ -364,6 +478,12 @@ const pathTitleMap: Record<string, string> = {
   '/violations': '违规记录',
   '/policies': '政策公告',
   '/notices': '通知管理',
+  '/recommendation-logs': '推荐监控',
+  '/agent-sessions': 'Agent 会话',
+  '/vendor-tags': '标签管理',
+  '/credit-scores': '信用分管理',
+  '/reports': '数据上报',
+  '/data-imports': '政务数据导入',
   '/users': '用户管理',
   '/roles': '角色权限',
   '/system': '系统设置'

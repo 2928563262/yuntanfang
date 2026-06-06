@@ -5,7 +5,7 @@
         <p class="eyebrow">摊主故事专区</p>
         <h1 class="page-title">摊主故事</h1>
       </div>
-      <button class="primary-pill">新建故事</button>
+      <RouterLink class="primary-pill" to="/vendor/stories/create">新建故事</RouterLink>
     </header>
 
     <section class="section content-grid">
