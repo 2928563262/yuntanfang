@@ -640,6 +640,18 @@ a.card:hover,
   cursor: pointer;
 }
 
+.logout-card {
+  width: 100%;
+  border-color: rgba(156, 50, 31, 0.16);
+  color: #9c321f;
+  text-align: left;
+  cursor: pointer;
+}
+
+.logout-card p {
+  color: rgba(156, 50, 31, 0.68);
+}
+
 .form-error {
   margin: 0;
   border: 1px solid rgba(156, 50, 31, 0.16);

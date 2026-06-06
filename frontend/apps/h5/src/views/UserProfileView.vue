@@ -2,8 +2,8 @@
   <main class="page profile-page">
     <section class="hero-card">
       <p class="eyebrow">个人中心</p>
-      <h1>用户名</h1>
-      <p>收藏、足迹、评价、钱包和投诉进度集中管理。</p>
+      <h1>{{ session?.username ?? '用户名' }}</h1>
+      <p>{{ session?.label ?? '普通用户' }} · 收藏、足迹、评价、钱包和投诉进度集中管理。</p>
     </section>
 
     <section class="section metric-grid">
@@ -19,10 +19,23 @@
         <p>{{ item.desc }}</p>
       </RouterLink>
     </section>
+
+    <section class="section">
+      <button class="list-card logout-card" type="button" @click="logout">
+        <h3>退出登录</h3>
+        <p>清除当前测试登录状态，返回登录页重新选择身份。</p>
+      </button>
+    </section>
   </main>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { clearAuthSession, getAuthSession } from '@yuntanfang/shared'
+
+const router = useRouter()
+const session = getAuthSession()
+
 const metrics = [
   { value: 8, label: '我的收藏', path: '/favorites' },
   { value: 12, label: '浏览足迹', path: '/footprints' },
@@ -43,4 +56,9 @@ const actions = [
   { title: '意见反馈', path: '/feedback', desc: '提交产品建议和问题反馈' },
   { title: '设置', path: '/settings', desc: '账号与安全、隐私管理' }
 ]
+
+function logout() {
+  clearAuthSession()
+  router.push('/login')
+}
 </script>

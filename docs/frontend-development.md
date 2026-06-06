@@ -194,6 +194,12 @@ H5 用户端和商家端：
 - 已登录后访问 `/login` 会按角色回到普通用户首页或商家工作台。
 - 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-06 我的页退出登录
+
+- “我的”页显示当前 mock 登录账号和角色标签。
+- “我的”页新增退出登录操作，清除 mock session 后回到 `/login`。
+- 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：
