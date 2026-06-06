@@ -1,8 +1,14 @@
 <template>
   <RouterView v-if="$route.path === '/login'" />
   <el-container v-else class="layout">
-    <el-aside width="236px">
-      <div class="brand">云摊坊后台</div>
+    <el-aside width="248px">
+      <div class="brand">
+        <span class="brand-mark">云</span>
+        <div>
+          <strong>云摊坊后台</strong>
+          <small>运营监管工作台</small>
+        </div>
+      </div>
       <el-menu router :default-active="$route.path">
         <el-menu-item v-for="menu in adminMenus" :key="menu.path" :index="menu.path">
           {{ menu.title }}
@@ -16,7 +22,7 @@
           <el-breadcrumb-item>{{ $route.meta.title }}</el-breadcrumb-item>
         </el-breadcrumb>
         <el-dropdown>
-          <span>{{ session?.username ?? '未登录' }}</span>
+          <span class="admin-user">{{ session?.username ?? '未登录' }}</span>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item>{{ session?.label ?? '权限占位' }}</el-dropdown-item>
