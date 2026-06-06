@@ -1,13 +1,20 @@
 <template>
-  <main class="page login-page">
-    <section class="hero-card">
+  <main class="login-page">
+    <section class="login-cover">
+      <div class="login-brand">
+        <span class="brand-mark">云</span>
+        <div>
+          <strong>云摊坊</strong>
+          <small>智慧摊务平台</small>
+        </div>
+      </div>
       <p class="eyebrow">账号登录</p>
       <h1>选择身份进入云摊坊</h1>
-      <p>当前阶段使用测试账号区分端，后续再接正式验证码、权限和后端登录接口。</p>
+      <p>使用测试账号进入不同端，先完成前端页面区分，后续接正式登录和权限系统。</p>
     </section>
 
-    <section class="section content-grid">
-      <form class="card form-list" @submit.prevent="login">
+    <section class="login-workbench">
+      <form class="card form-list login-form" @submit.prevent="login">
         <div class="field-card">
           <label>账号</label>
           <input v-model="username" autocomplete="username" placeholder="test1 / test2 / test3" />
@@ -21,7 +28,7 @@
         <p class="muted">test1 为普通用户，test2 为商家，test3 为管理后台账号。</p>
       </form>
 
-      <aside class="card">
+      <aside class="card login-accounts">
         <h2>测试账号</h2>
         <div class="list-stack">
           <button v-for="account in mockAccounts" :key="account.username" class="list-card account-card" type="button" @click="fillAccount(account)">

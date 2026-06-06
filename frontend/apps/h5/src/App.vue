@@ -1,5 +1,6 @@
 <template>
-  <div class="app-shell">
+  <RouterView v-if="$route.path === '/login'" />
+  <div v-else class="app-shell">
     <aside class="desktop-nav" aria-label="主导航">
       <div class="desktop-brand">
         <span class="brand-mark">云</span>
@@ -12,14 +13,6 @@
         <van-icon :name="item.icon" />
         <span>{{ item.label }}</span>
       </RouterLink>
-      <RouterLink v-if="!session" to="/login" class="desktop-nav-item desktop-auth-item">
-        <van-icon name="contact" />
-        <span>登录</span>
-      </RouterLink>
-      <button v-else class="desktop-nav-item desktop-auth-item" type="button" @click="logout">
-        <van-icon name="revoke" />
-        <span>退出</span>
-      </button>
     </aside>
 
     <section class="phone-frame">
@@ -36,7 +29,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { clearAuthSession, getAuthSession } from '@yuntanfang/shared'
+import { getAuthSession } from '@yuntanfang/shared'
 
 const router = useRouter()
 const session = ref(getAuthSession())
@@ -56,10 +49,4 @@ const navItems = computed(() => [
   ...(session.value?.role === 'vendor' ? [{ to: '/vendor/dashboard', icon: 'shop-o', label: '摊主' }] : []),
   { to: '/profile', icon: 'user-o', label: '我的' }
 ])
-
-function logout() {
-  clearAuthSession()
-  session.value = null
-  router.push('/login')
-}
 </script>

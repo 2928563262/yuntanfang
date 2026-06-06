@@ -66,11 +66,18 @@ export const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  if (to.path.startsWith('/vendor')) {
-    const session = getAuthSession()
-    if (session?.role !== 'vendor') {
-      return { path: '/login', query: { redirect: to.fullPath } }
-    }
+  const session = getAuthSession()
+
+  if (!session && to.path !== '/login') {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  if (session && to.path === '/login') {
+    return session.role === 'vendor' ? '/vendor/dashboard' : '/'
+  }
+
+  if (to.path.startsWith('/vendor') && session?.role !== 'vendor') {
+    return { path: '/', replace: true }
   }
 
   return true

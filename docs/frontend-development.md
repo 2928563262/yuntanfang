@@ -186,6 +186,14 @@ H5 用户端和商家端：
 - 数据库 `create_database.sql` 增加账号类型/密码占位字段和测试账号种子，test2 同步生成示例商家记录。
 - 验证命令：`corepack pnpm -r --filter './packages/**' --filter './apps/**' build`。
 
+### 2026-06-06 H5 登录入口调整
+
+- H5 未登录时访问任意页面都会跳转到 `/login`，不再默认进入首页。
+- `/login` 独立渲染整屏登录页，不显示左侧导航和底部 Tab。
+- H5 导航栏移除登录/退出入口，后续退出入口可放到“我的/设置”。
+- 已登录后访问 `/login` 会按角色回到普通用户首页或商家工作台。
+- 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：
