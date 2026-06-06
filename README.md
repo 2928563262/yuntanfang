@@ -26,8 +26,12 @@ deploy/         Docker Compose、Nginx、脚本
 cd deploy
 docker compose up -d mysql redis
 
+# 一条命令启动依赖、后端、H5 和管理后台
+cd ..
+./deploy/scripts/start-dev.ps1
+
 # 启动后端
-cd ../backend
+cd backend
 mvn spring-boot:run
 
 # 启动前端
@@ -57,6 +61,24 @@ pnpm dev:admin
 - OpenAPI JSON：`http://localhost:8080/v3/api-docs`
 - H5 前台：`http://localhost:5173`
 - 管理后台：`http://localhost:5174`
+
+## 统一启动脚本
+
+Windows PowerShell：
+
+```powershell
+./deploy/scripts/start-dev.ps1
+```
+
+停止本地开发进程：
+
+```powershell
+./deploy/scripts/stop-dev.ps1
+```
+
+脚本会使用 Docker Compose 启动 MySQL 和 Redis。MySQL 宿主机端口默认是 `13307`，避免和本机已有 MySQL 冲突；Redis 使用 `6379`。
+
+Redis 在当前阶段只作为缓存、验证码、限流等能力预留。开发时不需要手工创建库或表，保持 Docker 容器运行即可；后端通过 `REDIS_HOST`、`REDIS_PORT` 自动连接。
 
 ## Git 规范
 

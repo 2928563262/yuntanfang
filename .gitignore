@@ -11,6 +11,7 @@ dist/
 # Logs
 *.log
 logs/
+deploy/.dev-pids.json
 
 # Env
 .env
