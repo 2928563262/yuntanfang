@@ -7,10 +7,10 @@
     </section>
 
     <section class="section metric-grid">
-      <div class="card metric-card"><strong>8</strong><span>我的收藏</span></div>
-      <div class="card metric-card"><strong>12</strong><span>浏览足迹</span></div>
-      <div class="card metric-card"><strong>5</strong><span>我的评价</span></div>
-      <div class="card metric-card"><strong>2</strong><span>投诉进度</span></div>
+      <RouterLink v-for="metric in metrics" :key="metric.path" class="card metric-card" :to="metric.path">
+        <strong>{{ metric.value }}</strong>
+        <span>{{ metric.label }}</span>
+      </RouterLink>
     </section>
 
     <section class="section action-grid">
@@ -23,6 +23,13 @@
 </template>
 
 <script setup lang="ts">
+const metrics = [
+  { value: 8, label: '我的收藏', path: '/favorites' },
+  { value: 12, label: '浏览足迹', path: '/footprints' },
+  { value: 5, label: '我的评价', path: '/my-reviews' },
+  { value: 2, label: '投诉进度', path: '/complaints' }
+]
+
 const actions = [
   { title: '我的订单', path: '/orders', desc: '查看预约、取餐和退款状态' },
   { title: '我的钱包', path: '/wallet', desc: '支付账单、红包、代金券、发票' },

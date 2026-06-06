@@ -238,6 +238,21 @@ button {
   background: #ffffff;
 }
 
+a.list-card,
+a.card,
+.desktop-nav-item,
+.zone-card {
+  cursor: pointer;
+}
+
+a.list-card:hover,
+a.card:hover,
+.desktop-nav-item:hover,
+.zone-card:hover {
+  border-color: #ffd1c8;
+  box-shadow: 0 10px 24px rgba(255, 105, 79, 0.08);
+}
+
 .list-card-header {
   display: flex;
   align-items: flex-start;
@@ -441,8 +456,12 @@ button {
     padding: 22px 24px 30px;
   }
 
-  .van-tabbar {
-    display: none;
+  .van-tabbar,
+  .van-tabbar--fixed,
+  .van-tabbar-placeholder,
+  .phone-frame > .van-tabbar,
+  .phone-frame > .van-tabbar-placeholder {
+    display: none !important;
   }
 
   .hero-card {
