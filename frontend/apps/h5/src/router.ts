@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getAuthSession } from '@yuntanfang/shared'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
 import ComplaintCreateView from './views/ComplaintCreateView.vue'
@@ -62,4 +63,15 @@ const routes = [
 export const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to) => {
+  if (to.path.startsWith('/vendor')) {
+    const session = getAuthSession()
+    if (session?.role !== 'vendor') {
+      return { path: '/login', query: { redirect: to.fullPath } }
+    }
+  }
+
+  return true
 })

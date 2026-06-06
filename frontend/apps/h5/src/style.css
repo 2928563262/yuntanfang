@@ -566,6 +566,26 @@ a.card:hover,
   margin-top: 0;
 }
 
+.login-page .hero-card {
+  min-height: 180px;
+}
+
+.account-card {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.form-error {
+  margin: 0;
+  border: 1px solid rgba(156, 50, 31, 0.16);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #9c321f;
+  background: #fff0df;
+  font-size: 13px;
+}
+
 .home-page {
   display: grid;
   gap: 18px;

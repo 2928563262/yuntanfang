@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getAuthSession } from '@yuntanfang/shared'
 import LoginView from './views/LoginView.vue'
 import WorkbenchView from './views/WorkbenchView.vue'
 
@@ -27,4 +28,17 @@ export const router = createRouter({
     { path: '/login', component: LoginView, meta: { title: '管理端登录' } },
     ...adminMenus.map((menu) => ({ path: menu.path, component: WorkbenchView, meta: { title: menu.title } }))
   ]
+})
+
+router.beforeEach((to) => {
+  if (to.path === '/login') {
+    return true
+  }
+
+  const session = getAuthSession()
+  if (session?.role !== 'admin') {
+    return { path: '/login' }
+  }
+
+  return true
 })

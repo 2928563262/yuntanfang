@@ -1,41 +1,76 @@
 <template>
-  <main class="page">
+  <main class="page login-page">
     <section class="hero-card">
       <p class="eyebrow">账号登录</p>
-      <h1>欢迎来到云摊坊</h1>
-      <p>登录后可预约下单、收藏摊位、订阅出摊提醒，也可以申请成为摊主。</p>
+      <h1>选择身份进入云摊坊</h1>
+      <p>当前阶段使用测试账号区分端，后续再接正式验证码、权限和后端登录接口。</p>
     </section>
 
     <section class="section content-grid">
-      <form class="card form-list">
+      <form class="card form-list" @submit.prevent="login">
         <div class="field-card">
-          <label>手机号</label>
-          <input placeholder="请输入手机号" />
+          <label>账号</label>
+          <input v-model="username" autocomplete="username" placeholder="test1 / test2 / test3" />
         </div>
         <div class="field-card">
-          <label>验证码</label>
-          <div class="inline-field">
-            <input placeholder="请输入验证码" />
-            <button class="ghost-pill" type="button">获取验证码</button>
-          </div>
+          <label>密码</label>
+          <input v-model="password" autocomplete="current-password" placeholder="123456" type="password" />
         </div>
-        <button class="primary-pill" type="button">登录/注册</button>
-        <p class="muted">登录即表示同意用户协议和隐私政策。当前阶段使用 mock 登录，后续接入 `/api/auth/login`。</p>
+        <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
+        <button class="primary-pill" type="submit">登录</button>
+        <p class="muted">test1 为普通用户，test2 为商家，test3 为管理后台账号。</p>
       </form>
 
       <aside class="card">
-        <h2>更多入口</h2>
+        <h2>测试账号</h2>
         <div class="list-stack">
-          <RouterLink class="list-card" to="/vendor/apply">
-            <h3>我是摊主</h3>
-            <p>提交入驻备案、资质材料和公益标签。</p>
-          </RouterLink>
-          <RouterLink class="list-card" to="/stalls">
-            <h3>先逛逛</h3>
-            <p>浏览附近摊位、今日推荐和特色专区。</p>
-          </RouterLink>
+          <button v-for="account in mockAccounts" :key="account.username" class="list-card account-card" type="button" @click="fillAccount(account)">
+            <div class="list-card-header">
+              <div>
+                <h3>{{ account.username }}</h3>
+                <p>{{ account.label }} · 密码 123456</p>
+              </div>
+              <span class="status-tag">{{ account.app === 'admin' ? '管理端' : 'H5' }}</span>
+            </div>
+          </button>
         </div>
       </aside>
     </section>
   </main>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { mockAccounts, mockLogin, saveAuthSession, type MockAccount } from '@yuntanfang/shared'
+
+const router = useRouter()
+const route = useRoute()
+const username = ref('test1')
+const password = ref('123456')
+const errorMessage = ref('')
+
+function fillAccount(account: MockAccount) {
+  username.value = account.username
+  password.value = account.password
+  errorMessage.value = ''
+}
+
+function login() {
+  const session = mockLogin(username.value, password.value)
+
+  if (!session) {
+    errorMessage.value = '账号或密码错误'
+    return
+  }
+
+  if (session.app === 'admin') {
+    errorMessage.value = 'test3 是管理后台账号，请在管理端登录'
+    return
+  }
+
+  saveAuthSession(session)
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+  router.push(redirect || (session.role === 'vendor' ? '/vendor/dashboard' : '/'))
+}
+</script>

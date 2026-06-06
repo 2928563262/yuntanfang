@@ -177,6 +177,15 @@ H5 用户端和商家端：
 - 覆盖页面包括摊位列表、摊位详情、订单、订单详情、预约、评价、收藏、投诉、消息/钱包/帮助等通用骨架页面，以及当前保留的商家骨架页。
 - 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-06 测试登录与端区分
+
+- 新增前端 mock 登录账号：`test1/123456` 普通用户、`test2/123456` 商家、`test3/123456` 管理后台。
+- `@yuntanfang/shared` 新增 mock auth/session 工具，H5 和管理后台共用。
+- H5 登录页支持 test1/test2，登录后分别进入普通用户首页和商家工作台；商家路由增加临时守卫。
+- 管理后台登录页支持 test3，后台路由增加 admin 临时守卫。
+- 数据库 `create_database.sql` 增加账号类型/密码占位字段和测试账号种子，test2 同步生成示例商家记录。
+- 验证命令：`corepack pnpm -r --filter './packages/**' --filter './apps/**' build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：

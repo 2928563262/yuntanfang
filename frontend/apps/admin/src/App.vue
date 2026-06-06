@@ -16,11 +16,11 @@
           <el-breadcrumb-item>{{ $route.meta.title }}</el-breadcrumb-item>
         </el-breadcrumb>
         <el-dropdown>
-          <span>system_admin</span>
+          <span>{{ session?.username ?? '未登录' }}</span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item>权限占位</el-dropdown-item>
-              <el-dropdown-item>退出登录</el-dropdown-item>
+              <el-dropdown-item>{{ session?.label ?? '权限占位' }}</el-dropdown-item>
+              <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -33,5 +33,21 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { clearAuthSession, getAuthSession } from '@yuntanfang/shared'
 import { adminMenus } from './router'
+
+const router = useRouter()
+const session = ref(getAuthSession())
+
+router.afterEach(() => {
+  session.value = getAuthSession()
+})
+
+function logout() {
+  clearAuthSession()
+  session.value = null
+  router.push('/login')
+}
 </script>

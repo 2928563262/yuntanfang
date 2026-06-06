@@ -5,6 +5,8 @@ USE yun_tan_fang;
 CREATE TABLE IF NOT EXISTS t_user (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(64) NOT NULL,
+  password_hash VARCHAR(128) NOT NULL DEFAULT '',
+  account_type VARCHAR(32) NOT NULL DEFAULT 'consumer',
   mobile VARCHAR(32),
   wechat_id VARCHAR(64),
   status VARCHAR(32) NOT NULL DEFAULT 'active',
@@ -78,6 +80,8 @@ CREATE TABLE IF NOT EXISTS t_area (
 CREATE TABLE IF NOT EXISTS t_admin (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(64) NOT NULL,
+  password_hash VARCHAR(128) NOT NULL DEFAULT '',
+  role_code VARCHAR(64) NOT NULL DEFAULT 'admin',
   status VARCHAR(32) NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -136,3 +140,36 @@ INSERT IGNORE INTO t_role(role_code, role_name) VALUES
 ('auditor', '审核人员'),
 ('supervisor', '监管人员'),
 ('system_admin', '系统管理员');
+
+SET @schema_name = DATABASE();
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE t_user ADD COLUMN password_hash VARCHAR(128) NOT NULL DEFAULT ''''', 'SELECT 1') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 't_user' AND COLUMN_NAME = 'password_hash');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE t_user ADD COLUMN account_type VARCHAR(32) NOT NULL DEFAULT ''consumer''', 'SELECT 1') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 't_user' AND COLUMN_NAME = 'account_type');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE t_admin ADD COLUMN password_hash VARCHAR(128) NOT NULL DEFAULT ''''', 'SELECT 1') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 't_admin' AND COLUMN_NAME = 'password_hash');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE t_admin ADD COLUMN role_code VARCHAR(64) NOT NULL DEFAULT ''admin''', 'SELECT 1') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 't_admin' AND COLUMN_NAME = 'role_code');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 前端阶段测试账号。密码暂存明文，后续正式登录改为后端哈希校验。
+DELETE FROM t_user_role WHERE user_id IN (SELECT id FROM t_user WHERE username IN ('test1', 'test2'));
+DELETE FROM t_vendor WHERE user_id IN (SELECT id FROM t_user WHERE username = 'test2');
+DELETE FROM t_user WHERE username IN ('test1', 'test2');
+DELETE FROM t_admin WHERE username = 'test3';
+
+INSERT INTO t_user(username, password_hash, account_type, mobile, status) VALUES
+('test1', '123456', 'consumer', '13000000001', 'active'),
+('test2', '123456', 'vendor', '13000000002', 'active');
+
+INSERT INTO t_user_role(user_id, role_id)
+SELECT u.id, r.id FROM t_user u JOIN t_role r ON r.role_code = 'consumer' WHERE u.username = 'test1';
+
+INSERT INTO t_user_role(user_id, role_id)
+SELECT u.id, r.id FROM t_user u JOIN t_role r ON r.role_code = 'vendor' WHERE u.username = 'test2';
+
+INSERT INTO t_vendor(user_id, vendor_name, story, status)
+SELECT id, 'test2 的示例摊位', '用于商家端前端开发的测试摊主账号。', 'approved'
+FROM t_user WHERE username = 'test2';
+
+INSERT INTO t_admin(username, password_hash, role_code, status) VALUES
+('test3', '123456', 'admin', 'active');

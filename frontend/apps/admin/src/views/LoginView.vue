@@ -1,16 +1,53 @@
 <template>
   <main class="login">
     <section class="login-panel">
+      <p class="eyebrow">管理端登录</p>
       <h1>云摊坊后台</h1>
-      <el-form label-position="top">
+      <p class="login-copy">当前阶段使用测试账号进入后台，后续替换为正式 RBAC 登录。</p>
+
+      <el-form label-position="top" @submit.prevent>
         <el-form-item label="账号">
-          <el-input model-value="admin" />
+          <el-input v-model="username" autocomplete="username" placeholder="test3" />
         </el-form-item>
         <el-form-item label="密码">
-          <el-input model-value="password" type="password" />
+          <el-input v-model="password" autocomplete="current-password" placeholder="123456" show-password type="password" />
         </el-form-item>
-        <el-button type="primary" @click="$router.push('/dashboard')">登录</el-button>
+        <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+        <el-button class="login-button" type="primary" @click="login">登录后台</el-button>
       </el-form>
+
+      <button class="admin-test-account" type="button" @click="fillAdmin">
+        test3 / 123456 / 管理后台
+      </button>
     </section>
   </main>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { mockLogin, saveAuthSession } from '@yuntanfang/shared'
+
+const router = useRouter()
+const username = ref('test3')
+const password = ref('123456')
+const errorMessage = ref('')
+
+function fillAdmin() {
+  username.value = 'test3'
+  password.value = '123456'
+  errorMessage.value = ''
+}
+
+function login() {
+  const session = mockLogin(username.value, password.value)
+
+  if (!session || session.role !== 'admin') {
+    errorMessage.value = '请使用管理后台账号 test3 / 123456'
+    return
+  }
+
+  saveAuthSession(session)
+  router.push('/dashboard')
+}
+</script>
