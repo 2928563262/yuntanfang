@@ -8,6 +8,10 @@ body {
   margin: 0;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 .layout {
   min-height: 100vh;
 }
@@ -64,13 +68,76 @@ h1 {
 }
 
 .metrics span,
-.metrics strong {
+.metrics strong,
+.metrics small {
   display: block;
 }
 
 .metrics strong {
   margin-top: 8px;
   font-size: 24px;
+}
+
+.metrics small {
+  margin-top: 8px;
+  color: #6b7280;
+}
+
+.filter-card .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+
+.filter-card .el-input,
+.filter-card .el-select {
+  width: 220px;
+}
+
+.table-card {
+  overflow: hidden;
+}
+
+.table-head,
+.pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pagination-row {
+  justify-content: flex-end;
+  padding-top: 14px;
+}
+
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.flow-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f9fafb;
+}
+
+.flow-item span,
+.flow-item strong,
+.flow-item small {
+  display: block;
+}
+
+.flow-item strong {
+  margin-top: 8px;
+  font-size: 22px;
+}
+
+.flow-item small {
+  margin-top: 6px;
+  color: #6b7280;
 }
 
 .login {
@@ -87,4 +154,67 @@ h1 {
   border-radius: 8px;
   padding: 24px;
   box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    display: block;
+  }
+
+  .el-aside {
+    width: 100% !important;
+    border-right: 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .el-menu {
+    display: flex;
+    overflow-x: auto;
+    border-right: 0;
+  }
+
+  .el-menu-item {
+    flex: 0 0 auto;
+  }
+
+  .el-header {
+    min-height: 56px;
+    padding: 0 12px;
+  }
+
+  .el-main {
+    padding: 14px;
+  }
+
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .metrics,
+  .flow-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-card .el-form {
+    display: grid;
+  }
+
+  .filter-card .el-input,
+  .filter-card .el-select,
+  .filter-card .el-date-editor {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .metrics,
+  .flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
