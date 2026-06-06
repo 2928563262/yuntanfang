@@ -44,6 +44,22 @@
             <span>{{ order.contact }}</span>
           </div>
         </article>
+
+        <article class="card">
+          <div class="section-head">
+            <h2>支付/退款</h2>
+            <span class="status-tag">{{ payment.status }}</span>
+          </div>
+          <div class="meta-row">
+            <span>{{ payment.type }}</span>
+            <span>金额 ¥{{ payment.amount }}</span>
+            <span>{{ payment.updatedAt }}</span>
+          </div>
+          <div class="action-grid section">
+            <button class="primary-pill">H5 支付</button>
+            <button class="ghost-pill">申请退款</button>
+          </div>
+        </article>
       </div>
 
       <aside class="card">
@@ -62,8 +78,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { userOrders } from '../data/mock'
+import { paymentRecords, userOrders } from '../data/mock'
 
 const route = useRoute()
 const order = computed(() => userOrders.find((item) => item.id === Number(route.params.id)) ?? userOrders[0])
+const payment = computed(() => paymentRecords.find((item) => item.orderId === order.value.id) ?? paymentRecords[0])
 </script>

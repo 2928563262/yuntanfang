@@ -10,7 +10,7 @@
       <h1>{{ stall.name }}</h1>
       <p>{{ stall.story }}</p>
       <div class="hero-actions">
-        <button class="primary-pill">预约下单</button>
+        <RouterLink class="primary-pill" :to="`/stalls/${stall.id}/reserve`">预约下单</RouterLink>
         <button class="ghost-pill">一键导航</button>
       </div>
     </section>
@@ -26,6 +26,11 @@
             <span>摊主：{{ stall.vendor }}</span>
             <span>评分：{{ stall.rating }}</span>
             <span>{{ stall.address }}</span>
+          </div>
+          <div class="action-grid section">
+            <button class="ghost-pill">关注摊主</button>
+            <RouterLink class="ghost-pill" to="/favorites">收藏摊位</RouterLink>
+            <RouterLink class="ghost-pill" to="/subscriptions">订阅提醒</RouterLink>
           </div>
         </article>
 

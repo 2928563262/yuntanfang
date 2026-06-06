@@ -83,6 +83,22 @@ export const userComplaints = [
 
 export const reviewMetrics = ['卫生', '服务', '品质', '性价比']
 
+export const userFavorites = [
+  { id: 1, type: '摊位', name: '烟火小摊', desc: '地方特色 · 680m', status: '营业中' },
+  { id: 2, type: '商品', name: '手作糍粑', desc: '烟火小摊 · ¥12 起', status: '已收藏' },
+  { id: 3, type: '摊主', name: '周老师', desc: '守艺糖画铺 · 非遗好物', status: '已关注' }
+]
+
+export const userSubscriptions = [
+  { id: 1, stall: '烟火小摊', time: '每天 17:30', channel: '站内信', status: '已开启' },
+  { id: 2, stall: '守艺糖画铺', time: '周六 16:00', channel: '网页通知', status: '待授权' }
+]
+
+export const paymentRecords = [
+  { id: 8001, orderId: 1001, type: 'H5 支付', status: '待支付', amount: '32.00', updatedAt: '今天 18:10' },
+  { id: 8002, orderId: 1002, type: '退款', status: '无退款', amount: '0.00', updatedAt: '昨天 12:40' }
+]
+
 export const vendorTasks = [
   { title: '入驻审核', value: '待补充资质', status: 'warning' },
   { title: '今日订单', value: '8 单', status: 'active' },

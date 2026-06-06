@@ -25,6 +25,8 @@
 <script setup lang="ts">
 const actions = [
   { title: '我的订单', path: '/orders', desc: '查看预约、取餐和退款状态' },
+  { title: '收藏关注', path: '/favorites', desc: '管理收藏摊位、商品和关注摊主' },
+  { title: '出摊提醒', path: '/subscriptions', desc: '订阅摊主出摊和营业提醒' },
   { title: '我的投诉', path: '/complaints', desc: '提交投诉并跟踪处理进度' },
   { title: '帮助与客服', path: '/profile', desc: '在线客服、意见反馈、常见问题' },
   { title: '摊主入驻', path: '/vendor/apply', desc: '申请成为合规摊主' },
