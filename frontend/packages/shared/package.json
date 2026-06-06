@@ -1,0 +1,10 @@
+{
+  "name": "@yuntanfang/shared",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts"
+  }
+}

@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: yuntanfang
+  profiles:
+    active: ${APP_ENV:dev}
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:yun_tan_fang}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:yuntanfang}
+    password: ${MYSQL_PASSWORD:change_me}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:replace_with_local_dev_secret_at_least_32_chars}
+    expire-seconds: ${JWT_EXPIRE_SECONDS:7200}

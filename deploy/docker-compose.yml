@@ -1,0 +1,50 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: yuntanfang-mysql
+    environment:
+      MYSQL_DATABASE: yun_tan_fang
+      MYSQL_USER: yuntanfang
+      MYSQL_PASSWORD: change_me
+      MYSQL_ROOT_PASSWORD: root_change_me
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../database/create_database.sql:/docker-entrypoint-initdb.d/01_create_database.sql:ro
+      - ../database/add_public_welfare.sql:/docker-entrypoint-initdb.d/02_add_public_welfare.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: yuntanfang-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ../backend
+    container_name: yuntanfang-backend
+    env_file:
+      - ../.env.example
+    environment:
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  mysql_data:
+  redis_data:
