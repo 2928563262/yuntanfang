@@ -683,7 +683,9 @@ a.card:hover,
   .van-tabbar--fixed,
   .van-tabbar-placeholder,
   .phone-frame > .van-tabbar,
-  .phone-frame > .van-tabbar-placeholder {
+  .phone-frame > .van-tabbar-placeholder,
+  .phone-frame > van-tabbar,
+  .phone-frame > van-tabbar-placeholder {
     display: none !important;
   }
 
