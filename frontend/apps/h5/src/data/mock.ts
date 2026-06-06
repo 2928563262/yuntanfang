@@ -112,7 +112,12 @@ export const vendorMenu = [
   { title: '摊位出摊', path: '/vendor/stalls', desc: '预约、日历、打卡、临时休摊' },
   { title: '商品管理', path: '/vendor/products', desc: '商品、图片、视频、全景占位' },
   { title: '订单处理', path: '/vendor/orders', desc: '接单、拒单、备货状态' },
-  { title: '评价回复', path: '/vendor/reviews', desc: '查看评价并回复用户' }
+  { title: '评价回复', path: '/vendor/reviews', desc: '查看评价并回复用户' },
+  { title: '店铺信息', path: '/vendor/profile', desc: '公告、时段、环境与资料' },
+  { title: '营销活动', path: '/vendor/activities', desc: '代金券、推荐位和自建活动' },
+  { title: '分享推广', path: '/vendor/share', desc: '摊位链接、二维码、海报占位' },
+  { title: '商家设置', path: '/vendor/settings', desc: '账号安全、打印机、快捷短语' },
+  { title: '帮助中心', path: '/vendor/help', desc: '开店、资质、订单处理说明' }
 ]
 
 export const vendorQualifications = [
@@ -149,3 +154,125 @@ export const vendorStoryDrafts = [
   { title: '凌晨四点的汤底', status: '草稿', updatedAt: '今天 09:10' },
   { title: '从老街学来的手作糍粑', status: '待审核', updatedAt: '昨天 21:20' }
 ]
+
+export const userUtilityConfigs: Record<string, { title: string; eyebrow: string; action: string; rows: { title: string; desc: string; status: string }[] }> = {
+  '/messages': {
+    title: '消息中心',
+    eyebrow: '通知、站内信、系统反馈',
+    action: '全部已读',
+    rows: [
+      { title: '出摊提醒', desc: '烟火小摊将在 17:30 出摊', status: '未读' },
+      { title: '投诉进度', desc: '工单 5001 已分派监管人员', status: '处理中' },
+      { title: '系统通知', desc: '公益摊位专区规则已更新', status: '已读' }
+    ]
+  },
+  '/help': {
+    title: '帮助与客服',
+    eyebrow: '在线客服、电话客服、常见问题',
+    action: '联系在线客服',
+    rows: [
+      { title: '预约下单怎么取消', desc: '订单未接单前可取消，接单后需联系摊主。', status: 'FAQ' },
+      { title: '如何提交投诉', desc: '进入我的投诉，填写对象、问题类型和举证材料。', status: 'FAQ' },
+      { title: '如何成为摊主', desc: '提交入驻备案、资质材料和特殊身份认证。', status: 'FAQ' }
+    ]
+  },
+  '/feedback': {
+    title: '意见反馈',
+    eyebrow: '产品建议与问题反馈',
+    action: '提交反馈',
+    rows: [
+      { title: '地图定位不准确', desc: '记录设备、浏览器和定位权限状态。', status: '待提交' },
+      { title: '页面体验建议', desc: '收集移动端与 PC 端体验问题。', status: '草稿' }
+    ]
+  },
+  '/footprints': {
+    title: '我的足迹',
+    eyebrow: '最近浏览摊位和商品',
+    action: '清空足迹',
+    rows: [
+      { title: '烟火小摊', desc: '今天 18:02 浏览摊位详情', status: '摊位' },
+      { title: '手作糍粑', desc: '今天 17:40 浏览商品', status: '商品' },
+      { title: '守艺糖画铺', desc: '昨天 21:16 浏览非遗专区', status: '摊位' }
+    ]
+  },
+  '/my-reviews': {
+    title: '我的评价',
+    eyebrow: '已发布评价与待评价订单',
+    action: '去评价',
+    rows: [
+      { title: '烟火小摊', desc: '卫生 5 星，服务 5 星，品质 5 星', status: '已发布' },
+      { title: '乡野新农人鲜铺', desc: '订单已完成，等待评价', status: '待评价' }
+    ]
+  },
+  '/wallet': {
+    title: '我的钱包',
+    eyebrow: '支付账单、红包、代金券、发票',
+    action: '账单明细',
+    rows: [
+      { title: '支付账单', desc: 'H5 支付、退款、对账记录占位', status: 'mock' },
+      { title: '红包/代金券', desc: '商家券和平台活动券占位', status: 'mock' },
+      { title: '发票助手', desc: '发票抬头、税号和开票记录占位', status: 'mock' }
+    ]
+  },
+  '/settings': {
+    title: '设置',
+    eyebrow: '账号、安全、隐私、关于我们',
+    action: '退出登录',
+    rows: [
+      { title: '账号与安全', desc: '手机号、登录密码、注销账号', status: '可配置' },
+      { title: '隐私管理', desc: '定位、通知、个性化推荐授权', status: '可配置' },
+      { title: '关于我们', desc: '平台介绍、版本信息、服务协议', status: '信息' }
+    ]
+  }
+}
+
+export const vendorUtilityConfigs: Record<string, { title: string; eyebrow: string; action: string; rows: { title: string; desc: string; status: string }[] }> = {
+  '/vendor/profile': {
+    title: '店铺信息',
+    eyebrow: '名称、公告、营业时段、门店环境',
+    action: '保存信息',
+    rows: [
+      { title: '店铺名称', desc: '默林的广东肠粉早餐店', status: '已完善' },
+      { title: '店铺公告', desc: '今日 18:00 北站中心公园出摊', status: '展示中' },
+      { title: '门店环境', desc: '摊车、经营场所、商品照片', status: '待补充' }
+    ]
+  },
+  '/vendor/activities': {
+    title: '营销活动',
+    eyebrow: '自建活动、推荐位、代金券',
+    action: '发布活动',
+    rows: [
+      { title: '满 30 减 5', desc: '代金券活动，待内容审核', status: '待审核' },
+      { title: '今日推荐申请', desc: '申请进入首页今日推荐', status: '审核通过' }
+    ]
+  },
+  '/vendor/share': {
+    title: '分享推广',
+    eyebrow: '摊位链接、二维码、海报占位',
+    action: '生成海报',
+    rows: [
+      { title: '摊位链接', desc: 'https://yuntanfang.local/stalls/1', status: '可复制' },
+      { title: '二维码', desc: '二维码图片生成占位', status: '待生成' }
+    ]
+  },
+  '/vendor/settings': {
+    title: '商家设置',
+    eyebrow: '账号安全、打印机、快捷短语',
+    action: '保存设置',
+    rows: [
+      { title: '账号与安全', desc: '手机号、邮箱、登录密码、交易密码', status: '可配置' },
+      { title: '云打印机', desc: '打印设备绑定与测试', status: '未绑定' },
+      { title: '回评快捷短语', desc: '评价回复模板', status: '3 条' }
+    ]
+  },
+  '/vendor/help': {
+    title: '商家帮助中心',
+    eyebrow: '开店、资质、订单、提现说明',
+    action: '联系平台',
+    rows: [
+      { title: '如何选择品类', desc: '按主营商品选择经营品类，影响审核与展示。', status: 'FAQ' },
+      { title: '资质审核多久', desc: '工作日通常 24 小时内完成初审。', status: 'FAQ' },
+      { title: '订单拒单规则', desc: '拒单需填写原因，影响服务评分。', status: 'FAQ' }
+    ]
+  }
+}

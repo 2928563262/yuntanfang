@@ -8,11 +8,11 @@ import OrderDetailView from './views/OrderDetailView.vue'
 import OrdersView from './views/OrdersView.vue'
 import ReservationCreateView from './views/ReservationCreateView.vue'
 import ReviewCreateView from './views/ReviewCreateView.vue'
-import SimpleView from './views/SimpleView.vue'
 import StallDetailView from './views/StallDetailView.vue'
 import StallsView from './views/StallsView.vue'
 import SubscriptionsView from './views/SubscriptionsView.vue'
 import UserProfileView from './views/UserProfileView.vue'
+import UserUtilityView from './views/UserUtilityView.vue'
 import VendorApplyView from './views/VendorApplyView.vue'
 import VendorDashboardView from './views/VendorDashboardView.vue'
 import VendorOrdersView from './views/VendorOrdersView.vue'
@@ -21,6 +21,7 @@ import VendorQualificationsView from './views/VendorQualificationsView.vue'
 import VendorReviewsView from './views/VendorReviewsView.vue'
 import VendorStallsView from './views/VendorStallsView.vue'
 import VendorStoriesView from './views/VendorStoriesView.vue'
+import VendorUtilityView from './views/VendorUtilityView.vue'
 
 const routes = [
   { path: '/', component: HomeView, meta: { title: '首页', nav: 'home' } },
@@ -35,6 +36,13 @@ const routes = [
   { path: '/complaints/create', component: ComplaintCreateView, meta: { title: '提交投诉', module: '消费者', nav: 'profile' } },
   { path: '/favorites', component: FavoritesView, meta: { title: '收藏关注', module: '消费者', nav: 'profile' } },
   { path: '/subscriptions', component: SubscriptionsView, meta: { title: '出摊提醒', module: '消费者', nav: 'profile' } },
+  { path: '/messages', component: UserUtilityView, meta: { title: '消息中心', module: '消费者', nav: 'profile' } },
+  { path: '/help', component: UserUtilityView, meta: { title: '帮助与客服', module: '消费者', nav: 'profile' } },
+  { path: '/feedback', component: UserUtilityView, meta: { title: '意见反馈', module: '消费者', nav: 'profile' } },
+  { path: '/footprints', component: UserUtilityView, meta: { title: '我的足迹', module: '消费者', nav: 'profile' } },
+  { path: '/my-reviews', component: UserUtilityView, meta: { title: '我的评价', module: '消费者', nav: 'profile' } },
+  { path: '/wallet', component: UserUtilityView, meta: { title: '我的钱包', module: '消费者', nav: 'profile' } },
+  { path: '/settings', component: UserUtilityView, meta: { title: '设置', module: '消费者', nav: 'profile' } },
   { path: '/profile', component: UserProfileView, meta: { title: '个人中心', module: '消费者', nav: 'profile' } },
   { path: '/vendor/apply', component: VendorApplyView, meta: { title: '摊主入驻申请', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/dashboard', component: VendorDashboardView, meta: { title: '摊主工作台', module: '商家端', nav: 'vendor' } },
@@ -43,7 +51,12 @@ const routes = [
   { path: '/vendor/products', component: VendorProductsView, meta: { title: '商品管理', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/orders', component: VendorOrdersView, meta: { title: '订单处理', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/reviews', component: VendorReviewsView, meta: { title: '评价回复', module: '商家端', nav: 'vendor' } },
-  { path: '/vendor/stories', component: VendorStoriesView, meta: { title: '摊主故事', module: '商家端', nav: 'vendor' } }
+  { path: '/vendor/stories', component: VendorStoriesView, meta: { title: '摊主故事', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/profile', component: VendorUtilityView, meta: { title: '店铺信息', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/activities', component: VendorUtilityView, meta: { title: '营销活动', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/share', component: VendorUtilityView, meta: { title: '分享推广', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/settings', component: VendorUtilityView, meta: { title: '商家设置', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/help', component: VendorUtilityView, meta: { title: '商家帮助中心', module: '商家端', nav: 'vendor' } }
 ]
 
 export const router = createRouter({
