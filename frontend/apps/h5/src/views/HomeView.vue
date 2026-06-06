@@ -1,63 +1,88 @@
 <template>
-  <main class="page home-proto">
-    <section class="screen-top home-top">
-      <div class="status-bar">
-        <span>12:00</span>
-        <span class="status-icons">▮▮▮ wifi ▰</span>
+  <main class="page">
+    <section class="hero-card">
+      <p class="eyebrow">云摊坊 · 附近烟火气</p>
+      <h1>找摊位、看商品、预约取餐，一站完成</h1>
+      <p>面向市民消费者和本地摊主，聚合附近摊位、今日推荐、公益专区和合规经营信息。</p>
+      <div class="hero-actions">
+        <RouterLink class="primary-pill" to="/stalls">查找摊位</RouterLink>
+        <RouterLink class="ghost-pill" to="/vendor/apply">摊主入驻</RouterLink>
       </div>
-      <div class="home-location">
-        <span>深圳北站中心公园</span>
-        <van-icon name="cart-o" />
-      </div>
+    </section>
+
+    <section class="section">
       <van-search v-model="keyword" shape="round" placeholder="搜索摊位、商品、摊主" @search="goSearch" />
-      <div class="home-tabs">
-        <button class="active">推荐</button>
-        <button>附近</button>
-        <button>分类</button>
-        <button>公益</button>
-      </div>
-    </section>
-
-    <section class="quick-grid">
-      <RouterLink v-for="item in quickEntries" :key="item.label" :to="item.path" class="quick-item">
-        <span :class="['quick-icon', item.tone]"><van-icon :name="item.icon" /></span>
-        <strong>{{ item.label }}</strong>
-      </RouterLink>
     </section>
 
     <section class="section">
-      <div class="section-title-row">
-        <strong>今日推荐</strong>
-        <RouterLink to="/stalls">更多</RouterLink>
+      <div class="section-head">
+        <h2>特色专区</h2>
+        <RouterLink class="muted" to="/stalls">全部</RouterLink>
       </div>
-      <div class="mini-shop-row">
-        <RouterLink v-for="stall in stalls" :key="stall.id" :to="`/stalls/${stall.id}`" class="mini-shop">
-          <div class="food-thumb"></div>
-          <strong>{{ stall.name }}</strong>
-          <span>{{ stall.category }}</span>
+      <div class="zone-grid">
+        <RouterLink v-for="zone in featureZones" :key="zone.title" :class="['zone-card', `zone-${zone.tone}`]" to="/stalls">
+          <strong>{{ zone.title }}</strong>
+          <span>{{ zone.desc }}</span>
         </RouterLink>
       </div>
     </section>
 
     <section class="section">
-      <div class="section-title-row">
-        <strong>附近摊位</strong>
-        <RouterLink to="/stalls">筛选</RouterLink>
+      <div class="section-head">
+        <h2>分类筛选</h2>
       </div>
-      <div class="home-shop-list">
-        <RouterLink v-for="stall in stalls" :key="stall.id" :to="`/stalls/${stall.id}`" class="home-shop-card">
-          <div class="shop-img"></div>
-          <div>
-            <h3>{{ stall.name }}</h3>
-            <p>{{ stall.story }}</p>
-            <div class="meta-row">
-              <span>{{ stall.distance }}</span>
-              <span>{{ stall.rating }} 分</span>
-              <span>{{ stall.status }}</span>
+      <div class="chip-row">
+        <RouterLink v-for="item in categories" :key="item" class="chip" to="/stalls">{{ item }}</RouterLink>
+      </div>
+    </section>
+
+    <section class="section content-grid">
+      <div>
+        <div class="section-head">
+          <h2>附近摊位</h2>
+          <RouterLink class="muted" to="/stalls">查看更多</RouterLink>
+        </div>
+        <div class="list-stack">
+          <RouterLink v-for="stall in stalls" :key="stall.id" class="list-card" :to="`/stalls/${stall.id}`">
+            <div class="list-card-header">
+              <div>
+                <h3>{{ stall.name }}</h3>
+                <p>{{ stall.story }}</p>
+              </div>
+              <span class="status-tag">{{ stall.status }}</span>
             </div>
-          </div>
-        </RouterLink>
+            <div class="meta-row">
+              <span>{{ stall.category }}</span>
+              <span>{{ stall.distance }}</span>
+              <span>评分 {{ stall.rating }}</span>
+            </div>
+          </RouterLink>
+        </div>
       </div>
+
+      <aside class="card desktop-only">
+        <div class="section-head">
+          <h2>今日经营概览</h2>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <strong>36</strong>
+            <span>预约订单</span>
+          </div>
+          <div class="metric-card">
+            <strong>12</strong>
+            <span>出摊摊位</span>
+          </div>
+          <div class="metric-card">
+            <strong>4.8</strong>
+            <span>平均评分</span>
+          </div>
+          <div class="metric-card">
+            <strong>3</strong>
+            <span>待处理投诉</span>
+          </div>
+        </div>
+      </aside>
     </section>
   </main>
 </template>
@@ -65,21 +90,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { stalls } from '../data/mock'
+import { categories, featureZones, stalls } from '../data/mock'
 
 const router = useRouter()
 const keyword = ref('')
-
-const quickEntries = [
-  { icon: 'fire-o', label: '热卖小吃', path: '/stalls', tone: 'red' },
-  { icon: 'gift-o', label: '公益摊位', path: '/stalls', tone: 'orange' },
-  { icon: 'flower-o', label: '助农专区', path: '/stalls', tone: 'green' },
-  { icon: 'shop-o', label: '商家入驻', path: '/vendor/apply', tone: 'pink' },
-  { icon: 'medal-o', label: '非遗好物', path: '/stalls', tone: 'purple' },
-  { icon: 'location-o', label: '附近地图', path: '/stalls', tone: 'blue' },
-  { icon: 'coupon-o', label: '优惠活动', path: '/wallet', tone: 'orange' },
-  { icon: 'chat-o', label: '消息提醒', path: '/messages', tone: 'green' }
-]
 
 function goSearch() {
   router.push({ path: '/stalls', query: { keyword: keyword.value } })
