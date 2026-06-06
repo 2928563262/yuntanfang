@@ -30,7 +30,6 @@ const navItems = [
   { to: '/', icon: 'wap-home', label: '首页' },
   { to: '/stalls', icon: 'search', label: '摊位' },
   { to: '/orders', icon: 'orders-o', label: '订单' },
-  { to: '/vendor/dashboard', icon: 'shop-o', label: '摊主' },
   { to: '/profile', icon: 'user-o', label: '我的' }
 ]
 </script>

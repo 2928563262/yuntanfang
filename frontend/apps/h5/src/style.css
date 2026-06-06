@@ -223,6 +223,10 @@ button {
   font-size: 13px;
 }
 
+button.chip {
+  cursor: pointer;
+}
+
 .content-grid,
 .list-stack {
   display: grid;
@@ -703,7 +707,7 @@ a.card:hover,
   }
 
   .home-hero {
-    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: end;
     min-height: 252px;
     padding: 28px;
@@ -728,7 +732,7 @@ a.card:hover,
   }
 
   .home-action-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .home-zone-grid {

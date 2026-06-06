@@ -4,19 +4,10 @@
       <div class="home-hero-copy">
         <p class="eyebrow">云摊坊 · 智慧摊务服务</p>
         <h1 id="home-title">找附近好摊，预约到点取</h1>
-        <p>
-          聚合摊位位置、商品推荐、预约下单、投诉反馈和摊主入驻服务，让市民和摊主在同一平台完成日常摊务。
-        </p>
+        <p>聚合附近摊位、商品推荐、预约下单、收藏关注和投诉反馈，让日常逛摊更省心。</p>
         <div class="hero-actions">
           <RouterLink class="primary-pill" to="/stalls">查找摊位</RouterLink>
-          <RouterLink class="ghost-pill" to="/vendor/apply">摊主入驻</RouterLink>
-        </div>
-      </div>
-
-      <div class="home-hero-board" aria-label="今日概览">
-        <div v-for="item in metrics" :key="item.label" class="home-metric">
-          <strong>{{ item.value }}</strong>
-          <span>{{ item.label }}</span>
+          <RouterLink class="ghost-pill" to="/orders">我的订单</RouterLink>
         </div>
       </div>
     </section>
@@ -57,7 +48,15 @@
         <h2>分类筛选</h2>
       </div>
       <div class="chip-row">
-        <RouterLink v-for="item in categories" :key="item" class="chip" to="/stalls">{{ item }}</RouterLink>
+        <button
+          v-for="item in categoryOptions"
+          :key="item"
+          :class="['chip', { active: activeCategory === item }]"
+          type="button"
+          @click="activeCategory = item"
+        >
+          {{ item }}
+        </button>
       </div>
     </section>
 
@@ -68,7 +67,7 @@
           <RouterLink class="muted" to="/stalls">查看更多</RouterLink>
         </div>
         <div class="home-stall-grid">
-          <RouterLink v-for="stall in stalls" :key="stall.id" class="home-stall-card" :to="`/stalls/${stall.id}`">
+          <RouterLink v-for="stall in filteredStalls" :key="stall.id" class="home-stall-card" :to="`/stalls/${stall.id}`">
             <div class="home-stall-top">
               <div>
                 <strong>{{ stall.name }}</strong>
@@ -105,19 +104,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { categories, featureZones, stalls } from '../data/mock'
 
 const router = useRouter()
 const keyword = ref('')
+const activeCategory = ref('全部')
+const categoryOptions = ['全部', ...categories]
 
-const metrics = [
-  { value: '36', label: '今日预约' },
-  { value: '12', label: '出摊摊位' },
-  { value: '4.8', label: '平均评分' },
-  { value: '3', label: '待处理投诉' }
-]
+const filteredStalls = computed(() => {
+  if (activeCategory.value === '全部') {
+    return stalls
+  }
+
+  return stalls.filter((stall) => stall.category === activeCategory.value)
+})
 
 const quickActions = [
   { title: '附近摊位', desc: '按距离找摊', icon: 'location-o', to: '/stalls' },
@@ -125,12 +127,12 @@ const quickActions = [
   { title: '我的订单', desc: '查看取餐状态', icon: 'orders-o', to: '/orders' },
   { title: '收藏关注', desc: '常逛摊位', icon: 'star-o', to: '/favorites' },
   { title: '提交投诉', desc: '问题留痕', icon: 'warning-o', to: '/complaints/create' },
-  { title: '摊主服务', desc: '入驻经营', icon: 'shop-o', to: '/vendor/dashboard' }
+  { title: '消息中心', desc: '提醒通知', icon: 'chat-o', to: '/messages' }
 ]
 
 const notices = [
   { title: '营业提醒', desc: '烟火小摊 17:30 北站中心公园东门出摊', to: '/messages' },
-  { title: '合规提示', desc: '摊主入驻需补充身份、健康证和摊车照片', to: '/vendor/apply' },
+  { title: '取餐提示', desc: '预约成功后可在订单里查看取餐时间和摊位地址', to: '/orders' },
   { title: '公益专区', desc: '微光创业者与助农摊位优先展示', to: '/stalls' }
 ]
 
