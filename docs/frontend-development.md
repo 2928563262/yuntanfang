@@ -163,6 +163,12 @@ H5 用户端和商家端：
 - 分类筛选增加空状态提示，避免无数据分类显示空白。
 - 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-06 导航与 Hero 细节优化
+
+- 左侧桌面导航增强交互：活跃指示条、图标底盘、hover 位移、阴影和品牌区质感。
+- 首页 Hero 去掉标题下方辅助小字，首屏更干净。
+- 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：

@@ -4,7 +4,6 @@
       <div class="home-hero-copy">
         <p class="eyebrow">云摊坊 · 智慧摊务服务</p>
         <h1 id="home-title">找附近好摊，预约到点取</h1>
-        <p>聚合附近摊位、商品推荐、预约下单、收藏关注和投诉反馈，让日常逛摊更省心。</p>
         <div class="hero-actions">
           <RouterLink class="primary-pill" to="/stalls">查找摊位</RouterLink>
           <RouterLink class="ghost-pill" to="/orders">我的订单</RouterLink>
