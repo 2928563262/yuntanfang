@@ -23,7 +23,6 @@
     <section class="section">
       <button class="list-card logout-card" type="button" @click="logout">
         <h3>退出登录</h3>
-        <p>清除当前测试登录状态，返回登录页重新选择身份。</p>
       </button>
     </section>
   </main>
