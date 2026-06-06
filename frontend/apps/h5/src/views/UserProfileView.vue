@@ -41,7 +41,6 @@ const actions = [
   { title: '我的投诉', path: '/complaints', desc: '提交投诉并跟踪处理进度' },
   { title: '帮助与客服', path: '/help', desc: '在线客服、意见反馈、常见问题' },
   { title: '意见反馈', path: '/feedback', desc: '提交产品建议和问题反馈' },
-  { title: '摊主入驻', path: '/vendor/apply', desc: '申请成为合规摊主' },
   { title: '设置', path: '/settings', desc: '账号与安全、隐私管理' }
 ]
 </script>

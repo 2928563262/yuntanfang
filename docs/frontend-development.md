@@ -169,6 +169,14 @@ H5 用户端和商家端：
 - 首页 Hero 去掉标题下方辅助小字，首屏更干净。
 - 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-06 H5 全局页面样式优化
+
+- 使用 `frontend-design` skill，将 H5 其余页面统一到“城市早市票据感”视觉体系。
+- 全局优化 `hero-card`、`page-header`、`card`、`list-card`、`metric-card`、`chip`、`status-tag`、表单、上传、时间线和 Vant 搜索/评分/底部导航样式。
+- 摊位列表搜索文案从“摊主名称”改为“位置”，个人中心移除普通用户视角下的“摊主入驻”入口。
+- 覆盖页面包括摊位列表、摊位详情、订单、订单详情、预约、评价、收藏、投诉、消息/钱包/帮助等通用骨架页面，以及当前保留的商家骨架页。
+- 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：

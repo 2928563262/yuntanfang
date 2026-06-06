@@ -8,7 +8,7 @@
       <RouterLink class="ghost-pill" to="/">返回首页</RouterLink>
     </header>
 
-    <van-search v-model="keyword" shape="round" placeholder="摊位、商品、摊主名称" />
+    <van-search v-model="keyword" shape="round" placeholder="摊位、商品、位置" />
 
     <section class="section">
       <div class="chip-row">
