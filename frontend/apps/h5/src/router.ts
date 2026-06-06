@@ -7,6 +7,12 @@ import StallsView from './views/StallsView.vue'
 import UserProfileView from './views/UserProfileView.vue'
 import VendorApplyView from './views/VendorApplyView.vue'
 import VendorDashboardView from './views/VendorDashboardView.vue'
+import VendorOrdersView from './views/VendorOrdersView.vue'
+import VendorProductsView from './views/VendorProductsView.vue'
+import VendorQualificationsView from './views/VendorQualificationsView.vue'
+import VendorReviewsView from './views/VendorReviewsView.vue'
+import VendorStallsView from './views/VendorStallsView.vue'
+import VendorStoriesView from './views/VendorStoriesView.vue'
 
 const routes = [
   { path: '/', component: HomeView, meta: { title: '首页', nav: 'home' } },
@@ -21,12 +27,12 @@ const routes = [
   { path: '/profile', component: UserProfileView, meta: { title: '个人中心', module: '消费者', nav: 'profile' } },
   { path: '/vendor/apply', component: VendorApplyView, meta: { title: '摊主入驻申请', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/dashboard', component: VendorDashboardView, meta: { title: '摊主工作台', module: '商家端', nav: 'vendor' } },
-  { path: '/vendor/qualifications', component: SimpleView, meta: { title: '资质管理', module: '商家端' } },
-  { path: '/vendor/stalls', component: SimpleView, meta: { title: '摊位预约与出摊管理', module: '商家端' } },
-  { path: '/vendor/products', component: SimpleView, meta: { title: '商品管理', module: '商家端' } },
-  { path: '/vendor/orders', component: SimpleView, meta: { title: '订单处理', module: '商家端' } },
-  { path: '/vendor/reviews', component: SimpleView, meta: { title: '评价回复', module: '商家端' } },
-  { path: '/vendor/stories', component: SimpleView, meta: { title: '摊主故事', module: '商家端' } }
+  { path: '/vendor/qualifications', component: VendorQualificationsView, meta: { title: '资质管理', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/stalls', component: VendorStallsView, meta: { title: '摊位预约与出摊管理', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/products', component: VendorProductsView, meta: { title: '商品管理', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/orders', component: VendorOrdersView, meta: { title: '订单处理', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/reviews', component: VendorReviewsView, meta: { title: '评价回复', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/stories', component: VendorStoriesView, meta: { title: '摊主故事', module: '商家端', nav: 'vendor' } }
 ]
 
 export const router = createRouter({

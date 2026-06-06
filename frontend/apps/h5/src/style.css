@@ -289,7 +289,8 @@ button {
 
 .field-card input,
 .field-card textarea,
-.field-card select {
+.field-card select,
+.list-card textarea {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--ytf-line);
@@ -298,9 +299,16 @@ button {
   background: #ffffff;
 }
 
-.field-card textarea {
+.field-card textarea,
+.list-card textarea {
   min-height: 84px;
   resize: vertical;
+}
+
+.chip.active {
+  border-color: var(--ytf-primary);
+  color: var(--ytf-primary);
+  background: #fff1ee;
 }
 
 .desktop-only {

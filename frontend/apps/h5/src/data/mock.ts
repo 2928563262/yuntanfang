@@ -66,3 +66,38 @@ export const vendorMenu = [
   { title: '订单处理', path: '/vendor/orders', desc: '接单、拒单、备货状态' },
   { title: '评价回复', path: '/vendor/reviews', desc: '查看评价并回复用户' }
 ]
+
+export const vendorQualifications = [
+  { title: '健康证', owner: '林师傅', status: '审核通过', expireAt: '2027-05-20' },
+  { title: '摊车照片', owner: '烟火小摊', status: '待补充', expireAt: '长期有效' },
+  { title: '经营场所照片', owner: '北站中心公园东门', status: '审核中', expireAt: '长期有效' },
+  { title: '特殊身份认证', owner: '守艺匠人', status: '待审核', expireAt: '长期有效' }
+]
+
+export const vendorReservations = [
+  { area: '北站中心公园东门', period: '18:00-22:00', date: '今天', status: '已确认' },
+  { area: '市民广场南侧临时摊区', period: '10:00-14:00', date: '明天', status: '待审批' },
+  { area: '老街口文创夜市', period: '17:30-23:00', date: '周六', status: '可预约' }
+]
+
+export const vendorProducts = [
+  { name: '招牌汤粉', price: '16.00', category: '地方特色', status: '在售中', stock: 68 },
+  { name: '手作糍粑', price: '12.00', category: '传统小吃', status: '待审核', stock: 40 },
+  { name: '冰糖绿豆沙', price: '8.00', category: '甜点饮品', status: '已下架', stock: 0 }
+]
+
+export const vendorOrders = [
+  { id: 9001, buyer: '陈同学', items: '招牌汤粉 x2', status: '待接单', pickupTime: '今天 18:30', amount: '32.00' },
+  { id: 9002, buyer: '周女士', items: '手作糍粑 x1', status: '备货中', pickupTime: '今天 19:00', amount: '12.00' },
+  { id: 9003, buyer: '李先生', items: '冰糖绿豆沙 x3', status: '已完成', pickupTime: '昨天 20:10', amount: '24.00' }
+]
+
+export const vendorReviews = [
+  { user: '陈同学', rating: 5, content: '汤粉很热，取餐也快，摊主服务很好。', status: '待回复' },
+  { user: '周女士', rating: 4, content: '糍粑口感不错，希望晚一点还有库存。', status: '已回复' }
+]
+
+export const vendorStoryDrafts = [
+  { title: '凌晨四点的汤底', status: '草稿', updatedAt: '今天 09:10' },
+  { title: '从老街学来的手作糍粑', status: '待审核', updatedAt: '昨天 21:20' }
+]
