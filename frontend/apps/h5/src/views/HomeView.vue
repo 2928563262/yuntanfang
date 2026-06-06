@@ -10,10 +10,23 @@
           <RouterLink class="ghost-pill" to="/orders">我的订单</RouterLink>
         </div>
       </div>
+
+      <div class="home-hero-visual" aria-label="附近摊位预览">
+        <div class="market-ticket">
+          <span>附近热摊</span>
+          <strong>北站中心公园</strong>
+          <small>18:00 后陆续出摊</small>
+        </div>
+        <div class="market-map">
+          <span class="market-pin pin-one">汤粉</span>
+          <span class="market-pin pin-two">鲜铺</span>
+          <span class="market-pin pin-three">糖画</span>
+        </div>
+      </div>
     </section>
 
     <section class="home-search-panel" aria-label="搜索">
-      <van-search v-model="keyword" shape="round" placeholder="搜索摊位、商品、摊主" @search="goSearch" />
+      <van-search v-model="keyword" shape="round" placeholder="搜索摊位、商品、位置" @search="goSearch" />
       <button class="home-location" type="button" @click="goSearch">附近 2km</button>
     </section>
 
@@ -85,6 +98,10 @@
               <span>评分 {{ stall.rating }}</span>
             </div>
           </RouterLink>
+          <article v-if="filteredStalls.length === 0" class="home-empty">
+            <strong>当前分类暂无摊位</strong>
+            <span>换个分类看看，或去全部摊位浏览附近好摊。</span>
+          </article>
         </div>
       </div>
 
