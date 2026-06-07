@@ -23,6 +23,13 @@
 | --- | --- | --- | --- |
 | `topic` | string | 否 | 用户想了解的功能或入口 |
 
+## 边界
+
+- 只回答功能入口、使用流程、系统能做什么。
+- 用户表达明确业务动作时，应切到对应 intent，不要用 `system_help` 绕过参数校验。
+- 用户问“怎么评价订单”是 `system_help`；用户说“给上一单好评”是 `submit_review`。
+- 用户问“怎么投诉”是 `system_help`；用户说“投诉烟火小摊卫生问题”是 `submit_complaint`。
+
 ## 响应 action
 
 ```json

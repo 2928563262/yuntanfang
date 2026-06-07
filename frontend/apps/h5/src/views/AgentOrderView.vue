@@ -209,11 +209,16 @@ function runAction() {
   const action = agentResult.value.action
   const payload = action.payload
   if (action.type === 'create_order') {
+    const product = strictText(payload.productName)
+    if (!product) {
+      pushMessage('assistant', '还缺商品名，请先告诉我要预约哪个商品。')
+      return
+    }
     const quantity = toNumber(payload.quantity, 1)
     const amount = toText(payload.totalAmount, (quantity * 16).toFixed(2))
     const order = userData.createOrder({
       stallId: stallIdFromName(toText(payload.stallName, '烟火小摊')),
-      product: toText(payload.productName, '招牌汤粉'),
+      product,
       quantity,
       pickupTime: toText(payload.pickupTime, '今天 19:00'),
       contact: '',
@@ -225,9 +230,15 @@ function runAction() {
   }
 
   if (action.type === 'submit_review') {
+    const orderId = toNumber(payload.orderId, 0)
+    const rating = toNumber(payload.rating, 0)
+    if (orderId <= 0 || rating <= 0) {
+      pushMessage('assistant', '还缺订单或评分信息，请说明订单号/上一单，以及你想给几星。')
+      return
+    }
     userData.addReview({
-      orderId: toNumber(payload.orderId, 1002),
-      rating: toNumber(payload.rating, 5),
+      orderId,
+      rating,
       content: toText(payload.content, '整体体验不错，取餐流程顺畅。')
     })
     router.push('/my-reviews')
@@ -235,10 +246,17 @@ function runAction() {
   }
 
   if (action.type === 'submit_complaint') {
+    const target = strictText(payload.target)
+    const type = strictText(payload.type)
+    const description = strictText(payload.description)
+    if (!target || (!type && !description)) {
+      pushMessage('assistant', '还缺投诉对象或问题描述，请补充要投诉哪个对象以及发生了什么。')
+      return
+    }
     userData.addComplaint({
-      target: toText(payload.target, '烟火小摊'),
-      type: toText(payload.type, '服务问题'),
-      description: toText(payload.description, '通过 Agent 提交投诉。')
+      target,
+      type: type || '其他问题',
+      description
     })
     router.push('/complaints')
     return
@@ -326,6 +344,10 @@ function formatTime(value: number) {
 
 function toText(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value : fallback
+}
+
+function strictText(value: unknown) {
+  return typeof value === 'string' ? value.trim() : ''
 }
 
 function toNumber(value: unknown, fallback: number) {

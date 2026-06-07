@@ -96,13 +96,35 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 5. 前端只执行后端返回的 action，不执行模型原始文本。
 6. DeepSeek 或功能 API 调用失败时最多重试 3 次；超过 3 次返回 `unavailable`。
 
-## 参数不足规则
+## 参数来源规则
+
+- 只能使用用户当前消息、历史中用户明确确认过的信息、系统已有静态数据。
+- 禁止模型为了调用 API 自己补商品、摊位、订单、投诉对象、评分、问题类型。
+- 后端允许的系统默认值必须写在小 skill 中；未列出的字段都不能默认补齐。
+- 必需参数不足时必须返回 `ask_clarification`，且不调用功能 API。
+- 用户纠正前文时，以最新消息为准，清空被纠正的参数。
+
+## 必需参数规则
 
 - `search_stalls` 至少需要 `keyword` 或 `category`；“附近摊位”“帮我找摊位”这类泛化表达必须追问。
 - `create_order` 必须有用户明确说出的 `productName`；只有 `stallName` 或“我想预约”时必须追问商品，不能按摊位默认补商品。
-- `submit_review` 至少需要 `rating` 或 `content`。
-- `submit_complaint` 至少需要 `target` 或 `description`。
+- `submit_review` 必须有订单指代（订单号，或“上一单/最近一单”等明确上下文），且必须有明确评分信号（数字星级，或好评/中评/差评/一般等）。
+- `submit_complaint` 必须有 `target`，且必须有 `type` 或 `description`。
 - `system_help` 可直接响应，不要求必需参数。
+
+## 系统默认值
+
+| Intent | 字段 | 默认值 | 条件 |
+| --- | --- | --- | --- |
+| `create_order` | `quantity` | `1` | 用户未说数量 |
+| `create_order` | `pickupTime` | `今天 19:00` | 用户未说取货时间 |
+| `create_order` | `stallName` | 从商品目录反查唯一摊位 | 用户明确商品但未说摊位 |
+| `submit_review` | `orderId` | 最近可评价订单 `1002` | 用户明确说“上一单/最近一单/这单/这个订单” |
+| `submit_review` | `rating` | `5/3/1` | 用户明确说好评/中评或一般/差评 |
+| `submit_review` | `content` | 按评分生成匹配文案 | 用户只给评分或好评/中评/差评 |
+| `submit_complaint` | `type` | `其他问题` | 用户给了对象和描述但未说类型 |
+
+默认值是后端规则，不是模型规则。模型输出不得为了匹配这些默认值而编造参数。
 
 参数不足响应：
 

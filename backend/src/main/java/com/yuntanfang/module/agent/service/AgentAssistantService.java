@@ -100,14 +100,14 @@ public class AgentAssistantService {
                 JSON 格式：
                 {"intent":"search_stalls|create_order|submit_review|submit_complaint|system_help","parameters":{...}}
                 可用 tool：
-                1. search_stalls: 参数 keyword, category。至少需要 keyword 或 category，"附近摊位"这种泛泛表达不算充分。
-                2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。必须有用户明确说出的 productName；只有摊位名或只说预约时不能下单。
-                3. submit_review: 参数 orderId, rating, content。至少需要 rating 或 content。
-                4. submit_complaint: 参数 target, type, description。至少需要 target 或 description。
+                全局规则：只抽取用户当前输入或历史中明确确认过的参数；不要猜测、不要默认补齐。缺必需参数时仍返回对应 intent 和已知参数，后端会追问。
+                1. search_stalls: 参数 keyword, category。必须有具体 keyword 或 category；"附近摊位"这种泛泛表达不算充分。
+                2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。必须有用户明确说出的 productName；不能根据摊位默认补商品。
+                3. submit_review: 参数 orderId, rating, content。必须有订单指代（orderId 或 上一单/最近一单）且必须有明确评分信号（数字星级/好评/中评/差评/一般等）。
+                4. submit_complaint: 参数 target, type, description。必须有投诉对象 target，且必须有 type 或 description。
                 5. system_help: 参数 topic。
                 已知摊位：烟火小摊、乡野新农人鲜铺、守艺糖画铺。
                 已知商品：招牌汤粉、手作糍粑、冰糖绿豆沙、当季蔬果、农家土鸡蛋、手工辣酱、生肖糖画、定制糖牌、糖画体验。
-                当用户要执行 tool 但必需参数不足时，仍返回对应 intent，只填已知参数；后端会追问，不要编造参数。不要根据摊位默认补商品。
                 若用户只是问怎么用、入口在哪、能做什么，使用 system_help。
                 """;
     }
@@ -161,7 +161,7 @@ public class AgentAssistantService {
         return switch (intent) {
             case "search_stalls" -> searchStalls(p, decision.raw());
             case "create_order" -> createOrder(p, decision.raw());
-            case "submit_review" -> submitReview(p, decision.raw());
+            case "submit_review" -> submitReview(p, decision.raw(), message);
             case "submit_complaint" -> submitComplaint(p, decision.raw());
             default -> systemHelp(p, decision.raw(), message);
         };
@@ -195,8 +195,8 @@ public class AgentAssistantService {
     }
 
     private AgentChatResult createOrder(Map<String, Object> parameters, String raw) {
-        String stallName = blankToDefault(safe(parameters.get("stallName")), "烟火小摊");
-        String productName = blankToDefault(safe(parameters.get("productName")), "招牌汤粉");
+        String productName = safe(parameters.get("productName"));
+        String stallName = blankToDefault(safe(parameters.get("stallName")), stallNameForProduct(productName));
         int quantity = Math.max(1, toInt(parameters.get("quantity"), 1));
         String pickupTime = blankToDefault(safe(parameters.get("pickupTime")), "今天 19:00");
         String amount = String.format(Locale.ROOT, "%.2f", quantity * 16.0);
@@ -217,10 +217,10 @@ public class AgentAssistantService {
         );
     }
 
-    private AgentChatResult submitReview(Map<String, Object> parameters, String raw) {
-        int orderId = toInt(parameters.get("orderId"), 1002);
-        int rating = Math.min(5, Math.max(1, toInt(parameters.get("rating"), 5)));
-        String content = blankToDefault(safe(parameters.get("content")), "整体体验不错，取餐流程顺畅。");
+    private AgentChatResult submitReview(Map<String, Object> parameters, String raw, String message) {
+        int orderId = toInt(parameters.get("orderId"), recentOrderId(message));
+        int rating = ratingFrom(parameters, message);
+        String content = blankToDefault(safe(parameters.get("content")), defaultReviewContent(rating));
         Map<String, Object> card = Map.of(
                 "reviewId", nextMockId(),
                 "orderId", orderId,
@@ -238,9 +238,9 @@ public class AgentAssistantService {
     }
 
     private AgentChatResult submitComplaint(Map<String, Object> parameters, String raw) {
-        String target = blankToDefault(safe(parameters.get("target")), "烟火小摊");
-        String type = blankToDefault(safe(parameters.get("type")), "服务问题");
-        String description = blankToDefault(safe(parameters.get("description")), "用户通过 Agent 提交投诉。");
+        String target = safe(parameters.get("target"));
+        String type = blankToDefault(safe(parameters.get("type")), "其他问题");
+        String description = safe(parameters.get("description"));
         Map<String, Object> card = Map.of(
                 "complaintId", nextMockId(),
                 "target", target,
@@ -290,7 +290,7 @@ public class AgentAssistantService {
                 action,
                 cards,
                 processSteps(intent, "completed", cards.size()),
-                List.of("找地方特色摊位", "预约一份招牌汤粉", "给上一单好评", "投诉卫生问题"),
+                List.of("找地方特色摊位", "预约一份招牌汤粉", "给上一单好评", "投诉烟火小摊卫生问题"),
                 "deepseek",
                 raw == null ? "" : raw
         );
@@ -312,16 +312,17 @@ public class AgentAssistantService {
                     List.of("预约招牌汤粉", "预约农家土鸡蛋", "预约生肖糖画")
             );
             case "submit_review" -> insufficient(
-                    safe(parameters.get("rating")).isBlank() && safe(parameters.get("content")).isBlank(),
-                    "你想给几星？也可以直接说评价内容，比如服务很好、取餐很快。",
+                    !hasOrderReference(parameters, message) || !hasRatingSignal(parameters, message),
+                    reviewClarification(parameters, message),
                     "submit_review",
-                    List.of("给 5 星好评", "服务很好", "取餐很快")
+                    List.of("给上一单 5 星好评", "评价订单 1002 服务很好", "最近一单取餐很快")
             );
             case "submit_complaint" -> insufficient(
-                    safe(parameters.get("target")).isBlank() && safe(parameters.get("description")).isBlank(),
-                    "你要投诉哪个摊位或问题？请告诉我对象，或简单描述发生了什么。",
+                    safe(parameters.get("target")).isBlank()
+                            || (safe(parameters.get("type")).isBlank() && safe(parameters.get("description")).isBlank()),
+                    complaintClarification(parameters),
                     "submit_complaint",
-                    List.of("投诉烟火小摊卫生问题", "投诉占道经营", "投诉服务态度")
+                    List.of("投诉烟火小摊卫生问题", "投诉守艺糖画铺占道经营", "投诉订单 1002 商品质量")
             );
             default -> null;
         };
@@ -432,6 +433,9 @@ public class AgentAssistantService {
         if (productName.isBlank()) {
             return false;
         }
+        if (isNegatedProduct(text, productName)) {
+            return false;
+        }
         if (text.contains(productName)) {
             return true;
         }
@@ -449,53 +453,92 @@ public class AgentAssistantService {
         };
     }
 
-    private static String inferStallName(String text) {
-        if (containsAny(text, "糖画", "周老师", "非遗")) {
-            return "守艺糖画铺";
+    private static boolean isNegatedProduct(String message, String productName) {
+        return containsAny(message, "没说", "不是", "不要", "不想", "别")
+                && (message.contains(productName) || switch (productName) {
+                    case "招牌汤粉" -> containsAny(message, "汤粉", "粉");
+                    case "手作糍粑" -> containsAny(message, "糍粑");
+                    case "冰糖绿豆沙" -> containsAny(message, "绿豆沙", "饮品");
+                    case "当季蔬果" -> containsAny(message, "蔬果", "水果", "蔬菜");
+                    case "农家土鸡蛋" -> containsAny(message, "鸡蛋", "土鸡蛋");
+                    case "手工辣酱" -> containsAny(message, "辣酱");
+                    case "生肖糖画" -> containsAny(message, "糖画");
+                    case "定制糖牌" -> containsAny(message, "糖牌");
+                    case "糖画体验" -> containsAny(message, "糖画体验", "体验");
+                    default -> false;
+                });
+    }
+
+    private static boolean hasOrderReference(Map<String, Object> parameters, String message) {
+        return toInt(parameters.get("orderId"), 0) > 0 || recentOrderId(message) > 0;
+    }
+
+    private static int recentOrderId(String message) {
+        return containsAny(message, "上一单", "最近一单", "刚才那单", "这单", "这个订单") ? 1002 : 0;
+    }
+
+    private static String reviewClarification(Map<String, Object> parameters, String message) {
+        if (!hasOrderReference(parameters, message)) {
+            return "你想评价哪个订单？可以说订单号，或明确说上一单、最近一单。";
         }
-        if (containsAny(text, "鲜", "鸡蛋", "蔬果", "农家")) {
+        return "你想给几星？可以说 1-5 星，或明确说好评、中评、差评。";
+    }
+
+    private static String complaintClarification(Map<String, Object> parameters) {
+        if (safe(parameters.get("target")).isBlank()) {
+            return "你要投诉哪个摊位、订单或摊区？请先告诉我投诉对象。";
+        }
+        return "你要投诉的具体问题是什么？可以说卫生问题、占道经营、商品质量或服务态度。";
+    }
+
+    private static boolean hasRatingSignal(Map<String, Object> parameters, String message) {
+        return toInt(parameters.get("rating"), 0) > 0
+                || containsAny(message, "好评", "五星", "5星", "五分", "中评", "一般", "差评", "一星", "1星", "不好", "很差");
+    }
+
+    private static int ratingFrom(Map<String, Object> parameters, String message) {
+        int rating = toInt(parameters.get("rating"), 0);
+        if (rating > 0) {
+            return Math.min(5, Math.max(1, rating));
+        }
+        if (containsAny(message, "差评", "一星", "1星", "不好", "很差")) {
+            return 1;
+        }
+        if (containsAny(message, "中评", "一般")) {
+            return 3;
+        }
+        return 5;
+    }
+
+    private static String defaultReviewContent(int rating) {
+        if (rating <= 2) {
+            return "本次体验不满意，希望后续改进。";
+        }
+        if (rating == 3) {
+            return "本次体验一般，还有改进空间。";
+        }
+        return "整体体验不错，取餐流程顺畅。";
+    }
+
+    private static String stallNameForProduct(String productName) {
+        if (containsAny(productName, "招牌汤粉", "手作糍粑", "冰糖绿豆沙")) {
+            return "烟火小摊";
+        }
+        if (containsAny(productName, "当季蔬果", "农家土鸡蛋", "手工辣酱")) {
             return "乡野新农人鲜铺";
+        }
+        if (containsAny(productName, "生肖糖画", "定制糖牌", "糖画体验")) {
+            return "守艺糖画铺";
         }
         return "烟火小摊";
     }
 
-    private static String inferProductName(String text) {
-        if (containsAny(text, "糖画")) {
-            return "生肖糖画";
-        }
-        if (containsAny(text, "鸡蛋")) {
-            return "农家土鸡蛋";
-        }
-        if (containsAny(text, "糍粑")) {
-            return "手作糍粑";
-        }
-        return "招牌汤粉";
-    }
-
-    private static String inferCategory(String text) {
-        if (containsAny(text, "农家", "蔬果", "鸡蛋")) {
-            return "农家特产";
-        }
-        if (containsAny(text, "糖画", "非遗")) {
-            return "非遗好物";
-        }
-        if (containsAny(text, "特色", "汤粉")) {
-            return "地方特色";
-        }
-        return "";
-    }
-
-    private static int inferNumber(String text, int fallback) {
-        String digits = text == null ? "" : text.replaceAll("\\D+", "");
-        if (digits.isBlank()) {
-            return fallback;
-        }
-        return toInt(digits, fallback);
-    }
-
     private static int toInt(Object value, int fallback) {
         try {
-            return Integer.parseInt(String.valueOf(value));
+            if (value instanceof Number number) {
+                return number.intValue();
+            }
+            return (int) Double.parseDouble(String.valueOf(value));
         } catch (Exception ex) {
             return fallback;
         }

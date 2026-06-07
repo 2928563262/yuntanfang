@@ -268,6 +268,15 @@ H5 用户端和商家端：
 - 后端会校验 `productName` 是否出现在当前用户输入中，防止模型按摊位默认补“招牌汤粉”等商品。
 - `docs/agent-skills/skills/create-order.md` 已写入禁止默认补商品规则和纠正语处理原则。
 
+### 2026-06-08 Agent API 参数全量审计
+
+- 对 5 个当前白名单能力完成参数矩阵审计：`search_stalls`、`create_order`、`submit_review`、`submit_complaint`、`system_help`。
+- 后端系统提示和执行校验统一为“模型只抽取，后端校验并执行”；缺必需参数时返回 `ask_clarification`，不调用功能 API。
+- `submit_review` 现在必须有订单指代和明确评分信号；`submit_complaint` 现在必须有投诉对象和问题类型/描述。
+- H5 Agent 确认动作增加二次 payload 校验，防止旧会话或异常响应把默认订单、评价、投诉写入本地 store。
+- `docs/agent-skills/SKILL.md` 和 5 个小 skill 已补齐参数来源规则、必需参数、允许的系统默认值和禁止行为。
+- 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：
