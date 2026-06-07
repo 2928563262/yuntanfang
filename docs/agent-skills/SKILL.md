@@ -99,7 +99,7 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 ## 参数不足规则
 
 - `search_stalls` 至少需要 `keyword` 或 `category`；“附近摊位”“帮我找摊位”这类泛化表达必须追问。
-- `create_order` 至少需要 `stallName` 或 `productName`。
+- `create_order` 必须有用户明确说出的 `productName`；只有 `stallName` 或“我想预约”时必须追问商品，不能按摊位默认补商品。
 - `submit_review` 至少需要 `rating` 或 `content`。
 - `submit_complaint` 至少需要 `target` 或 `description`。
 - `system_help` 可直接响应，不要求必需参数。

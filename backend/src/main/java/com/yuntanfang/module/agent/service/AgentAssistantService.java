@@ -101,13 +101,13 @@ public class AgentAssistantService {
                 {"intent":"search_stalls|create_order|submit_review|submit_complaint|system_help","parameters":{...}}
                 可用 tool：
                 1. search_stalls: 参数 keyword, category。至少需要 keyword 或 category，"附近摊位"这种泛泛表达不算充分。
-                2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。至少需要 stallName 或 productName。
+                2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。必须有用户明确说出的 productName；只有摊位名或只说预约时不能下单。
                 3. submit_review: 参数 orderId, rating, content。至少需要 rating 或 content。
                 4. submit_complaint: 参数 target, type, description。至少需要 target 或 description。
                 5. system_help: 参数 topic。
                 已知摊位：烟火小摊、乡野新农人鲜铺、守艺糖画铺。
                 已知商品：招牌汤粉、手作糍粑、冰糖绿豆沙、当季蔬果、农家土鸡蛋、手工辣酱、生肖糖画、定制糖牌、糖画体验。
-                当用户要执行 tool 但必需参数不足时，仍返回对应 intent，只填已知参数；后端会追问，不要编造参数。
+                当用户要执行 tool 但必需参数不足时，仍返回对应 intent，只填已知参数；后端会追问，不要编造参数。不要根据摊位默认补商品。
                 若用户只是问怎么用、入口在哪、能做什么，使用 system_help。
                 """;
     }
@@ -154,7 +154,7 @@ public class AgentAssistantService {
     private AgentChatResult execute(AgentDecision decision, String message) {
         String intent = normalizeIntent(decision.intent());
         Map<String, Object> p = decision.parameters();
-        AgentChatResult clarification = validateRequired(intent, p);
+        AgentChatResult clarification = validateRequired(intent, p, message);
         if (clarification != null) {
             return clarification;
         }
@@ -296,7 +296,7 @@ public class AgentAssistantService {
         );
     }
 
-    private AgentChatResult validateRequired(String intent, Map<String, Object> parameters) {
+    private AgentChatResult validateRequired(String intent, Map<String, Object> parameters, String message) {
         return switch (intent) {
             case "search_stalls" -> insufficient(
                     (safe(parameters.get("keyword")).isBlank() || isGenericSearchKeyword(safe(parameters.get("keyword"))))
@@ -306,8 +306,8 @@ public class AgentAssistantService {
                     List.of("找地方特色摊位", "找农家特产", "找非遗好物")
             );
             case "create_order" -> insufficient(
-                    safe(parameters.get("stallName")).isBlank() && safe(parameters.get("productName")).isBlank(),
-                    "你想预约哪个摊位或商品？比如招牌汤粉、农家土鸡蛋、生肖糖画。",
+                    safe(parameters.get("productName")).isBlank() || !hasExplicitProduct(message, safe(parameters.get("productName"))),
+                    "你想预约哪个商品？比如招牌汤粉、农家土鸡蛋、生肖糖画。请先告诉我具体商品，再帮你生成订单。",
                     "create_order",
                     List.of("预约招牌汤粉", "预约农家土鸡蛋", "预约生肖糖画")
             );
@@ -425,6 +425,28 @@ public class AgentAssistantService {
                 || value.equals("找摊位")
                 || value.equals("帮我找摊位")
                 || value.equals("帮我找附近摊位");
+    }
+
+    private static boolean hasExplicitProduct(String message, String productName) {
+        String text = message == null ? "" : message;
+        if (productName.isBlank()) {
+            return false;
+        }
+        if (text.contains(productName)) {
+            return true;
+        }
+        return switch (productName) {
+            case "招牌汤粉" -> containsAny(text, "汤粉", "粉");
+            case "手作糍粑" -> containsAny(text, "糍粑");
+            case "冰糖绿豆沙" -> containsAny(text, "绿豆沙", "饮品");
+            case "当季蔬果" -> containsAny(text, "蔬果", "水果", "蔬菜");
+            case "农家土鸡蛋" -> containsAny(text, "鸡蛋", "土鸡蛋");
+            case "手工辣酱" -> containsAny(text, "辣酱");
+            case "生肖糖画" -> containsAny(text, "糖画");
+            case "定制糖牌" -> containsAny(text, "糖牌");
+            case "糖画体验" -> containsAny(text, "糖画体验", "体验");
+            default -> false;
+        };
     }
 
     private static String inferStallName(String text) {

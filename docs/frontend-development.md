@@ -262,6 +262,12 @@ H5 用户端和商家端：
 - `deploy/scripts/start-dev.ps1` 会把当前 shell 中的 `DEEPSEEK_*` 环境变量传给后端进程，但不写入文件。
 - 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-08 Agent 订单参数校验修正
+
+- `create_order` 必须有用户明确说出的商品名；只有摊位名或“我想预约”时返回追问，不生成订单草稿。
+- 后端会校验 `productName` 是否出现在当前用户输入中，防止模型按摊位默认补“招牌汤粉”等商品。
+- `docs/agent-skills/skills/create-order.md` 已写入禁止默认补商品规则和纠正语处理原则。
+
 ## 交接提示
 
 后续 AI 接手时先读：
