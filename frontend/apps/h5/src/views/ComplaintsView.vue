@@ -9,7 +9,7 @@
     </header>
 
     <section class="section list-stack">
-      <article v-for="item in userComplaints" :key="item.id" class="list-card">
+      <article v-for="item in userData.complaints.value" :key="item.id" class="list-card">
         <div class="list-card-header">
           <div>
             <h3>{{ item.target }}</h3>
@@ -28,5 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { userComplaints } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
+
+const userData = useUserDataStore()
 </script>

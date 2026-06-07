@@ -28,9 +28,9 @@
             <span>{{ stall.address }}</span>
           </div>
           <div class="action-grid section">
-            <button class="ghost-pill">关注摊主</button>
-            <RouterLink class="ghost-pill" to="/favorites">收藏摊位</RouterLink>
-            <RouterLink class="ghost-pill" to="/subscriptions">订阅提醒</RouterLink>
+            <button class="ghost-pill" type="button" @click="toggleFavorite">{{ isFavorite ? '取消收藏' : '收藏摊位' }}</button>
+            <RouterLink class="ghost-pill" to="/favorites">我的收藏</RouterLink>
+            <button class="ghost-pill" type="button" @click="toggleSubscription">{{ isSubscribed ? '取消提醒' : '订阅提醒' }}</button>
             <RouterLink class="ghost-pill" to="/stories">摊主故事</RouterLink>
           </div>
         </article>
@@ -59,17 +59,17 @@
             <RouterLink class="muted" to="/my-reviews">我的评价</RouterLink>
           </div>
           <div class="list-stack">
-            <div v-for="review in reviews" :key="`${review.user}-${review.time}`" class="list-card">
+            <div v-for="review in reviews" :key="`${review.id}-${review.time}`" class="list-card">
               <div class="list-card-header">
                 <div>
-                  <h3>{{ review.user }}</h3>
+                  <h3>{{ review.stall }}</h3>
                   <p>{{ review.content }}</p>
                 </div>
                 <span class="status-tag">{{ review.rating }} 星</span>
               </div>
               <div class="meta-row">
                 <span>{{ review.time }}</span>
-                <span>{{ review.likes }} 人点赞</span>
+                <span>{{ review.status }}</span>
               </div>
             </div>
           </div>
@@ -92,9 +92,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { stallReviews, stalls } from '../data/mock'
+import { stalls } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
 
 const route = useRoute()
+const userData = useUserDataStore()
 const stall = computed(() => stalls.find((item) => item.id === Number(route.params.id)) ?? stalls[0])
-const reviews = computed(() => stallReviews.filter((item) => item.stallId === stall.value.id))
+const reviews = computed(() => userData.reviews.value.filter((item) => item.stallId === stall.value.id))
+const isFavorite = computed(() => userData.hasFavorite('摊位', stall.value.id, stall.value.name))
+const isSubscribed = computed(() => userData.subscriptions.value.some((item) => item.stallId === stall.value.id))
+
+function toggleFavorite() {
+  userData.toggleStallFavorite(stall.value.id)
+}
+
+function toggleSubscription() {
+  userData.toggleSubscription(stall.value.id)
+}
 </script>

@@ -16,13 +16,13 @@
         </div>
         <div class="field-card">
           <label>评价内容</label>
-          <textarea placeholder="分享卫生、服务、品质和性价比体验"></textarea>
+          <textarea v-model="content" placeholder="分享卫生、服务、品质和性价比体验"></textarea>
         </div>
         <div class="upload-box">
           <strong>图文/视频评价</strong>
           <span>上传组件占位，后续接入对象存储</span>
         </div>
-        <button class="primary-pill" type="button" @click="$router.push('/my-reviews')">提交评价</button>
+        <button class="primary-pill" type="button" @click="submitReview">提交评价</button>
       </form>
 
       <aside class="card">
@@ -34,16 +34,30 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { reviewMetrics, userOrders } from '../data/mock'
+import { reactive, computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { reviewMetrics } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
 
 const route = useRoute()
-const order = computed(() => userOrders.find((item) => item.id === Number(route.params.orderId)) ?? userOrders[0])
+const router = useRouter()
+const userData = useUserDataStore()
+const order = computed(() => userData.findOrder(Number(route.params.orderId)))
+const content = ref('')
 const ratings = reactive<Record<string, number>>({
   卫生: 5,
   服务: 5,
   品质: 5,
   性价比: 5
 })
+
+function submitReview() {
+  const avgRating = Math.round(Object.values(ratings).reduce((sum, rating) => sum + rating, 0) / reviewMetrics.length)
+  userData.addReview({
+    orderId: order.value.id,
+    rating: avgRating,
+    content: content.value
+  })
+  router.push('/my-reviews')
+}
 </script>

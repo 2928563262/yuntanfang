@@ -29,18 +29,21 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { clearAuthSession, getAuthSession } from '@yuntanfang/shared'
+import { useUserDataStore } from '../stores/userData'
 
 const router = useRouter()
 const session = getAuthSession()
+const userData = useUserDataStore()
 
-const metrics = [
-  { value: 8, label: '我的收藏', path: '/favorites' },
+const metrics = computed(() => [
+  { value: userData.favorites.value.length, label: '我的收藏', path: '/favorites' },
   { value: 12, label: '浏览足迹', path: '/footprints' },
-  { value: 5, label: '我的评价', path: '/my-reviews' },
-  { value: 2, label: '投诉进度', path: '/complaints' }
-]
+  { value: userData.reviews.value.length, label: '我的评价', path: '/my-reviews' },
+  { value: userData.complaints.value.length, label: '投诉进度', path: '/complaints' }
+])
 
 const actions = [
   { title: '我的订单', path: '/orders', desc: '查看预约、取餐和退款状态' },

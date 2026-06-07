@@ -31,6 +31,7 @@
           <label>联系方式</label>
           <input v-model="contact" placeholder="请输入手机号" />
         </div>
+        <p v-if="error" class="form-error">{{ error }}</p>
         <button class="primary-pill" type="button" @click="submitOrder">提交预约</button>
       </form>
 
@@ -59,21 +60,48 @@
 import { computed, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { stalls } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
 
 const route = useRoute()
 const router = useRouter()
+const userData = useUserDataStore()
 const stall = computed(() => stalls.find((item) => item.id === Number(route.params.id)) ?? stalls[0])
 const selectedProduct = ref('')
 const quantity = ref(1)
 const pickupTime = ref('今天 18:30')
 const contact = ref('')
+const error = ref('')
 const totalAmount = computed(() => (quantity.value * 16).toFixed(2))
+const unitPrice = computed(() => (Number(totalAmount.value) / Math.max(quantity.value, 1)).toFixed(2))
 
 watchEffect(() => {
   selectedProduct.value ||= stall.value.products[0] ?? ''
 })
 
 function submitOrder() {
-  router.push('/orders/1001')
+  error.value = ''
+  if (!selectedProduct.value) {
+    error.value = '请选择商品'
+    return
+  }
+  if (quantity.value < 1) {
+    error.value = '数量至少为 1'
+    return
+  }
+  if (!pickupTime.value.trim()) {
+    error.value = '请填写取货时间'
+    return
+  }
+
+  const order = userData.createOrder({
+    stallId: stall.value.id,
+    product: selectedProduct.value,
+    quantity: quantity.value,
+    pickupTime: pickupTime.value,
+    contact: contact.value,
+    amount: totalAmount.value,
+    price: unitPrice.value
+  })
+  router.push(`/orders/${order.id}`)
 }
 </script>

@@ -23,7 +23,7 @@
         </div>
         <div class="meta-row">
           <span>{{ item.type }}</span>
-          <span>可取消收藏/关注</span>
+          <button class="ghost-pill" type="button" @click="userData.removeFavorite(item.id)">取消收藏</button>
         </div>
       </article>
     </section>
@@ -32,9 +32,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { userFavorites } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
 
+const userData = useUserDataStore()
 const tabs = ['全部', '摊位', '商品', '摊主']
 const activeTab = ref('全部')
-const filteredItems = computed(() => userFavorites.filter((item) => activeTab.value === '全部' || item.type === activeTab.value))
+const filteredItems = computed(() => userData.favorites.value.filter((item) => activeTab.value === '全部' || item.type === activeTab.value))
 </script>

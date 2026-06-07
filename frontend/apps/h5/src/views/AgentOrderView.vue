@@ -37,7 +37,7 @@
             <h3>等待识别</h3>
             <p>输入一句话需求后，这里会生成订单确认卡。</p>
           </div>
-          <RouterLink class="primary-pill" to="/stalls/1/reserve">确认预约</RouterLink>
+          <button class="primary-pill" type="button" :disabled="!orderCard" @click="confirmAgentOrder">确认预约</button>
           <RouterLink class="ghost-pill" to="/stalls">降级为商品列表下单</RouterLink>
         </div>
       </aside>
@@ -47,9 +47,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { agentApi, type AgentOrderResult } from '@yuntanfang/api'
 import { agentMessages } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
 
+const router = useRouter()
+const userData = useUserDataStore()
 const draft = ref('')
 const loading = ref(false)
 const messages = ref([...agentMessages])
@@ -85,5 +89,19 @@ async function sendMessage() {
   } finally {
     loading.value = false
   }
+}
+
+function confirmAgentOrder() {
+  if (!orderCard.value) {
+    return
+  }
+
+  const order = userData.createOrderFromAgent({
+    stallName: orderCard.value.stallName,
+    items: orderCard.value.items,
+    pickupTime: orderCard.value.pickupTime,
+    totalAmount: orderCard.value.totalAmount
+  })
+  router.push(`/orders/${order.id}`)
 }
 </script>

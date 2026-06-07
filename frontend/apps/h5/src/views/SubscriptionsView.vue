@@ -10,7 +10,7 @@
 
     <section class="section content-grid">
       <div class="list-stack">
-        <article v-for="item in userSubscriptions" :key="item.id" class="list-card">
+        <article v-for="item in userData.subscriptions.value" :key="item.id" class="list-card">
           <div class="list-card-header">
             <div>
               <h3>{{ item.stall }}</h3>
@@ -19,9 +19,11 @@
             <span class="status-tag">{{ item.status }}</span>
           </div>
           <div class="action-grid">
-            <button class="ghost-pill">暂停</button>
-            <button class="ghost-pill">修改</button>
-            <button class="primary-pill">授权通知</button>
+            <button class="ghost-pill" type="button" @click="userData.toggleSubscriptionStatus(item.id)">
+              {{ item.status === '已开启' ? '暂停' : '恢复' }}
+            </button>
+            <RouterLink class="ghost-pill" :to="`/stalls/${item.stallId}`">查看摊位</RouterLink>
+            <button class="primary-pill" type="button">授权通知</button>
           </div>
         </article>
       </div>
@@ -44,5 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { userSubscriptions } from '../data/mock'
+import { useUserDataStore } from '../stores/userData'
+
+const userData = useUserDataStore()
 </script>
