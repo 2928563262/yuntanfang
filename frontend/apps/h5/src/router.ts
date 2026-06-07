@@ -33,7 +33,7 @@ const routes = [
   { path: '/', component: HomeView, meta: { title: '首页', nav: 'home' } },
   { path: '/login', component: LoginView, meta: { title: '登录/注册', module: '账号', nav: 'profile' } },
   { path: '/recommendations', component: RecommendationsView, meta: { title: '智能推荐', module: '消费者', nav: 'home' } },
-  { path: '/agent-order', component: AgentOrderView, meta: { title: '智能点单', module: '消费者', nav: 'home' } },
+  { path: '/agent-order', component: AgentOrderView, meta: { title: '系统 Agent', module: '消费者', nav: 'agent' } },
   { path: '/stories', component: StoriesFeedView, meta: { title: '摊主故事', module: '消费者', nav: 'home' } },
   { path: '/stalls', component: StallsView, meta: { title: '摊位列表与筛选', module: '消费者', nav: 'stalls' } },
   { path: '/stalls/:id', component: StallDetailView, meta: { title: '摊位详情', module: '消费者', nav: 'stalls' } },
