@@ -138,7 +138,6 @@ const filteredStalls = computed(() => {
 })
 
 const quickActions = [
-  { title: '智能推荐', desc: '理由排序', icon: 'fire-o', to: '/recommendations' },
   { title: '智能点单', desc: '一句话预约', icon: 'chat-o', to: '/agent-order' },
   { title: '附近故事', desc: '摊主动态', icon: 'photo-o', to: '/stories' },
   { title: '我的订单', desc: '查看取餐状态', icon: 'orders-o', to: '/orders' },

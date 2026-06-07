@@ -216,7 +216,8 @@ H5 用户端和商家端：
 ### 2026-06-06 功能说明书第一批页面补齐
 
 - 用户端新增 `/recommendations`、`/agent-order`、`/stories`，覆盖推荐结果、智能点单和摊主故事流骨架。
-- 首页和“我的”接入上述新入口。
+- `/recommendations` 作为隐藏路由保留，后续推荐算法用于首页推流，不在常用服务和“我的”展示独立入口。
+- 首页和“我的”接入智能点单、摊主故事等可见入口。
 - 商家端新增 `/vendor/location-recommendations` 和 `/vendor/stories/create`，覆盖选址推荐和故事发布骨架。
 - 管理后台新增推荐监控、Agent 会话、标签管理、信用分管理、数据上报、政务数据导入菜单与 mock 配置。
 - 更新 `docs/frontend-page-gap-analysis.md` 标记本批已补页面。

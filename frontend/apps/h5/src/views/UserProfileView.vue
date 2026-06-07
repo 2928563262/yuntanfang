@@ -44,7 +44,6 @@ const metrics = [
 
 const actions = [
   { title: '我的订单', path: '/orders', desc: '查看预约、取餐和退款状态' },
-  { title: '智能推荐', path: '/recommendations', desc: '查看推荐理由和附近高匹配摊位' },
   { title: '智能点单', path: '/agent-order', desc: '用一句话生成预约订单' },
   { title: '摊主故事', path: '/stories', desc: '浏览关注摊主和附近热门动态' },
   { title: '我的钱包', path: '/wallet', desc: '支付账单、红包、代金券、发票' },
