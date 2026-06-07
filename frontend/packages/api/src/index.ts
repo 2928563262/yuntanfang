@@ -28,5 +28,13 @@ export const authApi = {
 export const stallApi = {
   nearby: () => http.get('/stalls/nearby'),
   search: (keyword: string) => http.get('/stalls/search', { params: { keyword } }),
-  detail: (id: string | number) => http.get(`/stalls/${id}`)
+  detail: (id: string | number) => http.get(`/stalls/${id}`),
+  products: (id: string | number) => http.get(`/stalls/${id}/products`),
+  reviews: (id: string | number) => http.get(`/stalls/${id}/reviews`)
+}
+
+export const orderApi = {
+  create: (payload: unknown) => http.post('/orders', payload),
+  list: () => http.get('/orders'),
+  detail: (id: string | number) => http.get(`/orders/${id}`)
 }
