@@ -24,11 +24,19 @@
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `stallName` | string | 否 | 摊位名，缺省为推荐摊位 |
-| `productName` | string | 否 | 商品名，缺省为该摊位招牌商品 |
+| `stallName` | string | 条件必填 | 摊位名 |
+| `productName` | string | 条件必填 | 商品名 |
 | `quantity` | number | 否 | 数量，缺省 1 |
 | `pickupTime` | string | 否 | 取货时间，缺省 `今天 19:00` |
 | `contact` | string | 否 | 联系方式，后续正式下单时补充 |
+
+`stallName` 和 `productName` 至少需要一个。只说“我要预约晚餐”时必须先追问，不能默认创建订单。
+
+## 参数不足响应
+
+追问文案：
+
+`你想预约哪个摊位或商品？比如招牌汤粉、农家土鸡蛋、生肖糖画。`
 
 ## 响应 action
 

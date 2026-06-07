@@ -252,6 +252,16 @@ H5 用户端和商家端：
 - 未实现的 Agent API 统一记录在 `docs/agent-skills/TODO.md`。
 - 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm -r build`。
 
+### 2026-06-07 Agent 交互规则修正
+
+- `search_stalls` 回复会把摊位名称、分类、营业状态、距离、评分和地址加工进自然语言回复，同时保留 cards。
+- H5 Agent 会话保存到 localStorage，保留 24 小时，右侧新增会话列表和新会话入口。
+- 后端按 skill 必需参数规则校验，参数不足返回 `ask_clarification`，不调用功能 API。
+- 右侧操作台新增 `processSteps` 流动式处理过程：识别意图、检查参数、调用功能 API。
+- 移除本地规则降级执行；DeepSeek 调用失败最多重试 3 次，仍失败返回 `unavailable`。
+- `deploy/scripts/start-dev.ps1` 会把当前 shell 中的 `DEEPSEEK_*` 环境变量传给后端进程，但不写入文件。
+- 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：

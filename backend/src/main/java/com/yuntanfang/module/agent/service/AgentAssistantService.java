@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yuntanfang.module.agent.dto.AgentChatRequest;
 import com.yuntanfang.module.agent.vo.AgentChatResult;
 import com.yuntanfang.module.agent.vo.AgentChatResult.AgentAction;
+import com.yuntanfang.module.agent.vo.AgentChatResult.ProcessStep;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -52,7 +53,7 @@ public class AgentAssistantService {
         String message = safe(request.message());
         AgentDecision decision = classifyWithModel(message, request);
         if (decision == null) {
-            decision = classifyLocally(message);
+            return unavailable();
         }
         return execute(decision, message);
     }
@@ -62,26 +63,34 @@ public class AgentAssistantService {
             return null;
         }
 
-        try {
-            Map<String, Object> response = restClient.post()
-                    .uri("/v1/chat/completions")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of(
-                            "model", model,
-                            "temperature", 0.1,
-                            "messages", List.of(
-                                    Map.of("role", "system", "content", systemPrompt()),
-                                    Map.of("role", "user", "content", buildUserPrompt(message, request))
-                            )
-                    ))
-                    .retrieve()
-                    .body(Map.class);
-            String content = extractContent(response);
-            return parseDecision(content);
-        } catch (Exception ex) {
-            return null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                Map<String, Object> response = restClient.post()
+                        .uri("/v1/chat/completions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(Map.of(
+                                "model", model,
+                                "temperature", 0.1,
+                                "messages", List.of(
+                                        Map.of("role", "system", "content", systemPrompt()),
+                                        Map.of("role", "user", "content", buildUserPrompt(message, request))
+                                )
+                        ))
+                        .retrieve()
+                        .body(Map.class);
+                String content = extractContent(response);
+                AgentDecision decision = parseDecision(content);
+                if (decision != null) {
+                    return decision;
+                }
+            } catch (Exception ex) {
+                if (attempt == 3) {
+                    return null;
+                }
+            }
         }
+        return null;
     }
 
     private String systemPrompt() {
@@ -91,13 +100,14 @@ public class AgentAssistantService {
                 JSON 格式：
                 {"intent":"search_stalls|create_order|submit_review|submit_complaint|system_help","parameters":{...}}
                 可用 tool：
-                1. search_stalls: 参数 keyword, category。
-                2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。
-                3. submit_review: 参数 orderId, rating, content。
-                4. submit_complaint: 参数 target, type, description。
+                1. search_stalls: 参数 keyword, category。至少需要 keyword 或 category，"附近摊位"这种泛泛表达不算充分。
+                2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。至少需要 stallName 或 productName。
+                3. submit_review: 参数 orderId, rating, content。至少需要 rating 或 content。
+                4. submit_complaint: 参数 target, type, description。至少需要 target 或 description。
                 5. system_help: 参数 topic。
                 已知摊位：烟火小摊、乡野新农人鲜铺、守艺糖画铺。
                 已知商品：招牌汤粉、手作糍粑、冰糖绿豆沙、当季蔬果、农家土鸡蛋、手工辣酱、生肖糖画、定制糖牌、糖画体验。
+                当用户要执行 tool 但必需参数不足时，仍返回对应 intent，只填已知参数；后端会追问，不要编造参数。
                 若用户只是问怎么用、入口在哪、能做什么，使用 system_help。
                 """;
     }
@@ -141,43 +151,13 @@ public class AgentAssistantService {
         }
     }
 
-    private AgentDecision classifyLocally(String message) {
-        String text = message == null ? "" : message;
-        Map<String, Object> parameters = new LinkedHashMap<>();
-
-        if (containsAny(text, "投诉", "举报", "卫生", "占道", "服务态度")) {
-            parameters.put("target", inferStallName(text));
-            parameters.put("type", text.contains("卫生") ? "卫生问题" : text.contains("占道") ? "占道经营" : "服务问题");
-            parameters.put("description", text.isBlank() ? "用户通过 Agent 提交投诉。" : text);
-            return new AgentDecision("submit_complaint", parameters, "local");
-        }
-        if (containsAny(text, "评价", "评分", "好评", "差评")) {
-            parameters.put("orderId", inferNumber(text, 1002));
-            parameters.put("rating", text.contains("差") ? 2 : 5);
-            parameters.put("content", text.isBlank() ? "通过 Agent 提交评价。" : text);
-            return new AgentDecision("submit_review", parameters, "local");
-        }
-        if (containsAny(text, "订", "预约", "下单", "取餐", "买")) {
-            parameters.put("stallName", inferStallName(text));
-            parameters.put("productName", inferProductName(text));
-            parameters.put("quantity", containsAny(text, "两", "2") ? 2 : 1);
-            parameters.put("pickupTime", text.contains("18:30") ? "今天 18:30" : "今天 19:00");
-            parameters.put("contact", "");
-            return new AgentDecision("create_order", parameters, "local");
-        }
-        if (containsAny(text, "摊位", "附近", "搜索", "找", "哪里", "推荐")) {
-            parameters.put("keyword", text);
-            parameters.put("category", inferCategory(text));
-            return new AgentDecision("search_stalls", parameters, "local");
-        }
-
-        parameters.put("topic", text.isBlank() ? "overview" : text);
-        return new AgentDecision("system_help", parameters, "local");
-    }
-
     private AgentChatResult execute(AgentDecision decision, String message) {
         String intent = normalizeIntent(decision.intent());
         Map<String, Object> p = decision.parameters();
+        AgentChatResult clarification = validateRequired(intent, p);
+        if (clarification != null) {
+            return clarification;
+        }
         return switch (intent) {
             case "search_stalls" -> searchStalls(p, decision.raw());
             case "create_order" -> createOrder(p, decision.raw());
@@ -200,8 +180,13 @@ public class AgentAssistantService {
                     ? STALLS
                     : STALLS.stream().filter(stall -> category.equals(stall.get("category"))).toList();
         }
+        String summary = records.stream()
+                .map(stall -> stall.get("name") + "：" + stall.get("category") + "，" + stall.get("status")
+                        + "，" + stall.get("distance") + "，评分 " + stall.get("rating") + "，地址 " + stall.get("address"))
+                .reduce((a, b) -> a + "；" + b)
+                .orElse("暂无匹配摊位");
         return result(
-                "已帮你找到 " + records.size() + " 个相关摊位，可以点卡片查看详情或继续让我筛选。",
+                "已找到 " + records.size() + " 个摊位。" + summary + "。",
                 "search_stalls",
                 new AgentAction("open_route", "查看摊位列表", "/stalls", Map.of("keyword", keyword, "category", category)),
                 records,
@@ -304,9 +289,83 @@ public class AgentAssistantService {
                 intent,
                 action,
                 cards,
-                List.of("帮我找附近摊位", "帮我预约一份晚餐", "订单怎么评价", "我要提交投诉"),
-                raw == null || raw.equals("local") ? "fallback_local" : "deepseek",
+                processSteps(intent, "completed", cards.size()),
+                List.of("找地方特色摊位", "预约一份招牌汤粉", "给上一单好评", "投诉卫生问题"),
+                "deepseek",
                 raw == null ? "" : raw
+        );
+    }
+
+    private AgentChatResult validateRequired(String intent, Map<String, Object> parameters) {
+        return switch (intent) {
+            case "search_stalls" -> insufficient(
+                    (safe(parameters.get("keyword")).isBlank() || isGenericSearchKeyword(safe(parameters.get("keyword"))))
+                            && safe(parameters.get("category")).isBlank(),
+                    "你想找哪类摊位？可以说地方特色、农家特产、非遗好物，或告诉我具体商品/位置。",
+                    "search_stalls",
+                    List.of("找地方特色摊位", "找农家特产", "找非遗好物")
+            );
+            case "create_order" -> insufficient(
+                    safe(parameters.get("stallName")).isBlank() && safe(parameters.get("productName")).isBlank(),
+                    "你想预约哪个摊位或商品？比如招牌汤粉、农家土鸡蛋、生肖糖画。",
+                    "create_order",
+                    List.of("预约招牌汤粉", "预约农家土鸡蛋", "预约生肖糖画")
+            );
+            case "submit_review" -> insufficient(
+                    safe(parameters.get("rating")).isBlank() && safe(parameters.get("content")).isBlank(),
+                    "你想给几星？也可以直接说评价内容，比如服务很好、取餐很快。",
+                    "submit_review",
+                    List.of("给 5 星好评", "服务很好", "取餐很快")
+            );
+            case "submit_complaint" -> insufficient(
+                    safe(parameters.get("target")).isBlank() && safe(parameters.get("description")).isBlank(),
+                    "你要投诉哪个摊位或问题？请告诉我对象，或简单描述发生了什么。",
+                    "submit_complaint",
+                    List.of("投诉烟火小摊卫生问题", "投诉占道经营", "投诉服务态度")
+            );
+            default -> null;
+        };
+    }
+
+    private AgentChatResult insufficient(boolean condition, String reply, String intent, List<String> prompts) {
+        if (!condition) {
+            return null;
+        }
+        return new AgentChatResult(
+                reply,
+                intent,
+                new AgentAction("ask_clarification", "补充信息", "", Map.of()),
+                List.of(),
+                processSteps(intent, "waiting_input", 0),
+                prompts,
+                "need_more_info",
+                ""
+        );
+    }
+
+    private AgentChatResult unavailable() {
+        return new AgentChatResult(
+                "Agent 功能暂时不可用，请稍后再试。",
+                "unavailable",
+                new AgentAction("none", "功能暂时不可用", "", Map.of()),
+                List.of(),
+                List.of(
+                        new ProcessStep("连接模型服务", "failed", "已重试 3 次"),
+                        new ProcessStep("终止执行", "completed", "未调用任何功能 API")
+                ),
+                List.of("稍后重试", "手动浏览摊位"),
+                "unavailable",
+                ""
+        );
+    }
+
+    private List<ProcessStep> processSteps(String intent, String status, int cardCount) {
+        return List.of(
+                new ProcessStep("识别用户意图", "completed", intent),
+                new ProcessStep("检查必需参数", status.equals("waiting_input") ? "waiting_input" : "completed",
+                        status.equals("waiting_input") ? "等待用户补充" : "参数满足"),
+                new ProcessStep("调用功能 API", status.equals("waiting_input") ? "pending" : "completed",
+                        status.equals("waiting_input") ? "未调用" : "返回 " + cardCount + " 条结果")
         );
     }
 
@@ -356,6 +415,16 @@ public class AgentAssistantService {
             }
         }
         return false;
+    }
+
+    private static boolean isGenericSearchKeyword(String keyword) {
+        String value = keyword.replaceAll("\\s+", "");
+        return value.isBlank()
+                || value.equals("附近摊位")
+                || value.equals("摊位")
+                || value.equals("找摊位")
+                || value.equals("帮我找摊位")
+                || value.equals("帮我找附近摊位");
     }
 
     private static String inferStallName(String text) {

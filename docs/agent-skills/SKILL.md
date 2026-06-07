@@ -49,6 +49,13 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
       }
     },
     "cards": [],
+    "processSteps": [
+      {
+        "title": "识别用户意图",
+        "status": "completed",
+        "detail": "search_stalls"
+      }
+    ],
     "suggestedPrompts": ["帮我找附近摊位", "帮我预约一份晚餐"],
     "status": "deepseek",
     "rawModelOutput": "{}"
@@ -84,9 +91,33 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 ```
 
 2. 后端校验 intent，只接受白名单。
-3. 后端补默认值并生成 action。
-4. 前端只执行后端返回的 action，不执行模型原始文本。
-5. DeepSeek 不可用或未配置 key 时，后端走本地规则降级。
+3. 后端按小 skill 的必需参数规则校验。参数不足时返回 `ask_clarification`，不要调用功能 API。
+4. 后端将 API 返回的结果加工成用户可读的 `reply`，同时保留结构化 `cards`。
+5. 前端只执行后端返回的 action，不执行模型原始文本。
+6. DeepSeek 或功能 API 调用失败时最多重试 3 次；超过 3 次返回 `unavailable`。
+
+## 参数不足规则
+
+- `search_stalls` 至少需要 `keyword` 或 `category`；“附近摊位”“帮我找摊位”这类泛化表达必须追问。
+- `create_order` 至少需要 `stallName` 或 `productName`。
+- `submit_review` 至少需要 `rating` 或 `content`。
+- `submit_complaint` 至少需要 `target` 或 `description`。
+- `system_help` 可直接响应，不要求必需参数。
+
+参数不足响应：
+
+```json
+{
+  "intent": "search_stalls",
+  "action": {
+    "type": "ask_clarification",
+    "label": "补充信息",
+    "route": "",
+    "payload": {}
+  },
+  "reply": "你想找哪类摊位？可以说地方特色、农家特产、非遗好物，或告诉我具体商品/位置。"
+}
+```
 
 ## 前端执行规则
 

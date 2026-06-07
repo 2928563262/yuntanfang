@@ -119,6 +119,9 @@ $processes += Start-LoggedProcess -Name "backend" -FilePath $mvn -Arguments "spr
   "MYSQL_PASSWORD" = "change_me"
   "REDIS_HOST" = "127.0.0.1"
   "REDIS_PORT" = "6379"
+  "DEEPSEEK_BASE_URL" = $env:DEEPSEEK_BASE_URL
+  "DEEPSEEK_API_KEY" = $env:DEEPSEEK_API_KEY
+  "DEEPSEEK_MODEL" = $env:DEEPSEEK_MODEL
 }
 $processes += Start-LoggedProcess -Name "h5" -FilePath "corepack" -Arguments "pnpm --filter @yuntanfang/h5 dev" -WorkingDirectory $Frontend
 $processes += Start-LoggedProcess -Name "admin" -FilePath "corepack" -Arguments "pnpm --filter @yuntanfang/admin dev" -WorkingDirectory $Frontend

@@ -60,6 +60,7 @@ export interface AgentChatResult {
   intent: string
   action: AgentAction
   cards: Record<string, unknown>[]
+  processSteps: { title: string; status: string; detail: string }[]
   suggestedPrompts: string[]
   status: string
   rawModelOutput: string

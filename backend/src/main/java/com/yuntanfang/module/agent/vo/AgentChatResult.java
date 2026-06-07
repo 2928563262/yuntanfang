@@ -8,6 +8,7 @@ public record AgentChatResult(
         String intent,
         AgentAction action,
         List<Map<String, Object>> cards,
+        List<ProcessStep> processSteps,
         List<String> suggestedPrompts,
         String status,
         String rawModelOutput
@@ -17,6 +18,13 @@ public record AgentChatResult(
             String label,
             String route,
             Map<String, Object> payload
+    ) {
+    }
+
+    public record ProcessStep(
+            String title,
+            String status,
+            String detail
     ) {
     }
 }
