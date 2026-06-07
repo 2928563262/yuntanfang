@@ -241,6 +241,17 @@ H5 用户端和商家端：
 - 个人中心指标、“我的评价”“我的钱包”“我的足迹”“设置”等页面已接入本地用户数据，不再只是静态占位。
 - 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-07 Agent 能力扩展
+
+- 后端新增统一 Agent 入口 `POST /api/agent/chat`，旧 `POST /api/agent/order/parse` 保留兼容。
+- Agent 当前实现 5 个白名单能力：`search_stalls`、`create_order`、`submit_review`、`submit_complaint`、`system_help`。
+- DeepSeek 只负责意图识别和参数抽取，后端负责白名单 action 执行；未配置 key 或调用失败时走本地规则降级。
+- H5 Agent 页从“智能订单 Agent”改为“系统 Agent”，输入框文案改为通用提示，不再只强调点单。
+- H5 Agent 操作台支持展示后端 action 和 cards，确认后可写入本地订单、评价、投诉或跳转系统入口。
+- 新增 `docs/agent-skills/SKILL.md` 作为 Agent 总 skill，`docs/agent-skills/skills/*.md` 记录 5 个小 skill 的参数和响应格式。
+- 未实现的 Agent API 统一记录在 `docs/agent-skills/TODO.md`。
+- 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm -r build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：
@@ -248,7 +259,8 @@ H5 用户端和商家端：
 1. `docs/frontend-development.md`
 2. `docs/module-roadmap.md`
 3. `README.md`
-4. `frontend/apps/h5/src/router.ts`
-5. `frontend/apps/admin/src/router.ts`
+4. `docs/agent-skills/SKILL.md`
+5. `frontend/apps/h5/src/router.ts`
+6. `frontend/apps/admin/src/router.ts`
 
 如果继续按原型还原页面，先解压原型 zip 到临时目录，不要提交原型 PDF、临时截图或渲染产物。

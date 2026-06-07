@@ -48,6 +48,25 @@ export interface AgentOrderResult {
   rawModelOutput: string
 }
 
+export interface AgentAction {
+  type: 'open_route' | 'create_order' | 'submit_review' | 'submit_complaint' | string
+  label: string
+  route: string
+  payload: Record<string, unknown>
+}
+
+export interface AgentChatResult {
+  reply: string
+  intent: string
+  action: AgentAction
+  cards: Record<string, unknown>[]
+  suggestedPrompts: string[]
+  status: string
+  rawModelOutput: string
+}
+
 export const agentApi = {
+  chat: (payload: { message: string; history: string[]; context?: Record<string, unknown> }) =>
+    http.post<ApiResponse<AgentChatResult>>('/agent/chat', payload),
   parseOrder: (payload: { message: string; history: string[] }) => http.post<ApiResponse<AgentOrderResult>>('/agent/order/parse', payload)
 }
