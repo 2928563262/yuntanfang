@@ -15,35 +15,39 @@
       <form class="card form-list">
         <div class="field-card">
           <label>选择商品</label>
-          <select>
+          <select v-model="selectedProduct">
             <option v-for="product in stall.products" :key="product">{{ product }}</option>
           </select>
         </div>
         <div class="field-card">
           <label>数量</label>
-          <input type="number" min="1" value="1" />
+          <input v-model.number="quantity" type="number" min="1" />
         </div>
         <div class="field-card">
           <label>取货时间</label>
-          <input value="今天 18:30" />
+          <input v-model="pickupTime" />
         </div>
         <div class="field-card">
           <label>联系方式</label>
-          <input placeholder="请输入手机号" />
+          <input v-model="contact" placeholder="请输入手机号" />
         </div>
-        <button class="primary-pill" type="button">提交预约</button>
+        <button class="primary-pill" type="button" @click="submitOrder">提交预约</button>
       </form>
 
       <aside class="card">
-        <h2>订单说明</h2>
+        <h2>订单确认</h2>
         <div class="list-stack">
           <div class="list-card">
-            <h3>支付占位</h3>
-            <p>当前仅创建预约订单，后续接入 H5 支付、回调、退款和对账。</p>
+            <h3>{{ selectedProduct }} x{{ quantity }}</h3>
+            <p>{{ stall.name }} · {{ pickupTime }}</p>
+            <div class="meta-row">
+              <span>预估金额 ¥{{ totalAmount }}</span>
+              <span>{{ contact || '待填写联系方式' }}</span>
+            </div>
           </div>
           <div class="list-card">
-            <h3>取货提醒</h3>
-            <p>可订阅摊主出摊提醒，避免错过营业时间。</p>
+            <h3>支付与取货</h3>
+            <p>当前创建预约单，后续接入 H5 支付、退款和取餐码。</p>
           </div>
         </div>
       </aside>
@@ -52,10 +56,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, watchEffect } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { stalls } from '../data/mock'
 
 const route = useRoute()
+const router = useRouter()
 const stall = computed(() => stalls.find((item) => item.id === Number(route.params.id)) ?? stalls[0])
+const selectedProduct = ref('')
+const quantity = ref(1)
+const pickupTime = ref('今天 18:30')
+const contact = ref('')
+const totalAmount = computed(() => (quantity.value * 16).toFixed(2))
+
+watchEffect(() => {
+  selectedProduct.value ||= stall.value.products[0] ?? ''
+})
+
+function submitOrder() {
+  router.push('/orders/1001')
+}
 </script>

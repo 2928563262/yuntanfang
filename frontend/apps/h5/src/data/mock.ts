@@ -101,6 +101,12 @@ export const userComplaints = [
 
 export const reviewMetrics = ['卫生', '服务', '品质', '性价比']
 
+export const stallReviews = [
+  { user: '陈同学', stallId: 1, rating: 5, content: '汤粉很热，取餐也快，卫生和服务都不错。', time: '今天 19:20', likes: 12 },
+  { user: '周女士', stallId: 1, rating: 4, content: '糍粑口感不错，希望晚一点还有库存。', time: '昨天 20:10', likes: 8 },
+  { user: '李先生', stallId: 2, rating: 5, content: '蔬菜新鲜，土鸡蛋品质稳定。', time: '昨天 12:40', likes: 9 }
+]
+
 export const userFavorites = [
   { id: 1, type: '摊位', name: '烟火小摊', desc: '地方特色 · 680m', status: '营业中' },
   { id: 2, type: '商品', name: '手作糍粑', desc: '烟火小摊 · ¥12 起', status: '已收藏' },

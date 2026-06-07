@@ -31,6 +31,7 @@
             <button class="ghost-pill">关注摊主</button>
             <RouterLink class="ghost-pill" to="/favorites">收藏摊位</RouterLink>
             <RouterLink class="ghost-pill" to="/subscriptions">订阅提醒</RouterLink>
+            <RouterLink class="ghost-pill" to="/stories">摊主故事</RouterLink>
           </div>
         </article>
 
@@ -47,6 +48,28 @@
                   <p>支持预约取货，后续接入库存、规格、媒资。</p>
                 </div>
                 <strong>¥12 起</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="section-head">
+            <h2>顾客评价</h2>
+            <RouterLink class="muted" to="/my-reviews">我的评价</RouterLink>
+          </div>
+          <div class="list-stack">
+            <div v-for="review in reviews" :key="`${review.user}-${review.time}`" class="list-card">
+              <div class="list-card-header">
+                <div>
+                  <h3>{{ review.user }}</h3>
+                  <p>{{ review.content }}</p>
+                </div>
+                <span class="status-tag">{{ review.rating }} 星</span>
+              </div>
+              <div class="meta-row">
+                <span>{{ review.time }}</span>
+                <span>{{ review.likes }} 人点赞</span>
               </div>
             </div>
           </div>
@@ -69,8 +92,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { stalls } from '../data/mock'
+import { stallReviews, stalls } from '../data/mock'
 
 const route = useRoute()
 const stall = computed(() => stalls.find((item) => item.id === Number(route.params.id)) ?? stalls[0])
+const reviews = computed(() => stallReviews.filter((item) => item.stallId === stall.value.id))
 </script>

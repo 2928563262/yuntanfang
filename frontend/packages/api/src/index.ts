@@ -30,3 +30,24 @@ export const stallApi = {
   search: (keyword: string) => http.get('/stalls/search', { params: { keyword } }),
   detail: (id: string | number) => http.get(`/stalls/${id}`)
 }
+
+export interface AgentOrderItem {
+  name: string
+  quantity: number
+  note: string
+}
+
+export interface AgentOrderResult {
+  reply: string
+  stallName: string
+  items: AgentOrderItem[]
+  pickupTime: string
+  totalAmount: string
+  confidence: string
+  status: string
+  rawModelOutput: string
+}
+
+export const agentApi = {
+  parseOrder: (payload: { message: string; history: string[] }) => http.post<ApiResponse<AgentOrderResult>>('/agent/order/parse', payload)
+}

@@ -32,6 +32,16 @@ cd backend
 mvn spring-boot:run
 ```
 
+智能点单 Agent 使用 DeepSeek OpenAI-compatible 接口。不要把真实 key 提交到仓库，本地启动前设置环境变量：
+
+```powershell
+$env:DEEPSEEK_BASE_URL="https://api.deepseek.com"
+$env:DEEPSEEK_API_KEY="你的本地 key"
+$env:DEEPSEEK_MODEL="deepseek-v4-pro"
+```
+
+未配置 `DEEPSEEK_API_KEY` 时，后端会返回本地降级解析结果，前端流程仍可演示。
+
 ## 前端
 
 ```bash

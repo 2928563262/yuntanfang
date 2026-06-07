@@ -22,7 +22,7 @@
           <strong>图文/视频评价</strong>
           <span>上传组件占位，后续接入对象存储</span>
         </div>
-        <button class="primary-pill" type="button">提交评价</button>
+        <button class="primary-pill" type="button" @click="$router.push('/my-reviews')">提交评价</button>
       </form>
 
       <aside class="card">

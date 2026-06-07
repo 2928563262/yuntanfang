@@ -20,6 +20,7 @@
         <div class="meta-row">
           <span>订单号 {{ order.id }}</span>
           <span>金额 ¥{{ order.amount }}</span>
+          <span>{{ order.status === '已完成' ? '可评价' : '待取餐' }}</span>
         </div>
       </RouterLink>
     </section>
