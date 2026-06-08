@@ -44,6 +44,7 @@ router.afterEach(() => {
 
 const navItems = computed(() => [
   { to: '/', icon: 'wap-home', label: '首页' },
+  { to: '/agent-order', icon: 'chat-o', label: '快速开始' },
   { to: '/stalls', icon: 'search', label: '摊位' },
   { to: '/orders', icon: 'orders-o', label: '订单' },
   ...(session.value?.role === 'vendor' ? [{ to: '/vendor/dashboard', icon: 'shop-o', label: '摊主' }] : []),

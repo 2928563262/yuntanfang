@@ -1088,6 +1088,135 @@ a.card:hover,
   background: rgba(255, 255, 255, 0.88);
 }
 
+.agent-side {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.agent-flow {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(86, 50, 28, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  background:
+    linear-gradient(90deg, rgba(47, 111, 100, 0.06), transparent),
+    rgba(255, 248, 239, 0.54);
+  overflow: hidden;
+}
+
+.agent-flow::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(47, 111, 100, 0.12), transparent);
+  transform: translateX(-100%);
+  animation: agent-flow-scan 1.8s linear infinite;
+  pointer-events: none;
+}
+
+.agent-flow-step {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.agent-flow-step > span {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: #b8b0a2;
+}
+
+.agent-flow-step strong,
+.agent-flow-step small {
+  display: block;
+}
+
+.agent-flow-step small {
+  margin-top: 2px;
+  color: var(--ytf-muted);
+  line-height: 1.45;
+}
+
+.agent-flow-completed > span {
+  background: #2f6f64;
+  box-shadow: 0 0 0 4px rgba(47, 111, 100, 0.12);
+}
+
+.agent-flow-running > span {
+  background: #ff7c3f;
+  box-shadow: 0 0 0 4px rgba(255, 124, 63, 0.14);
+  animation: agent-pulse 1.1s ease-in-out infinite;
+}
+
+.agent-flow-waiting_input > span {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+}
+
+.agent-flow-failed > span {
+  background: #9c321f;
+  box-shadow: 0 0 0 4px rgba(156, 50, 31, 0.14);
+}
+
+.agent-result-card span {
+  color: var(--ytf-muted);
+  line-height: 1.55;
+}
+
+.agent-session-panel .section-head {
+  margin-bottom: 6px;
+}
+
+.agent-session-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--ytf-line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ytf-text);
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.agent-session-item:hover,
+.agent-session-item.active {
+  border-color: rgba(47, 111, 100, 0.3);
+  background: #edf6f1;
+  transform: translateY(-1px);
+}
+
+.agent-session-item span {
+  color: var(--ytf-muted);
+  font-size: 12px;
+}
+
+@keyframes agent-flow-scan {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes agent-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.35);
+  }
+}
+
 .story-grid {
   display: grid;
   gap: 14px;

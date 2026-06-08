@@ -241,6 +241,42 @@ H5 用户端和商家端：
 - 个人中心指标、“我的评价”“我的钱包”“我的足迹”“设置”等页面已接入本地用户数据，不再只是静态占位。
 - 验证命令：`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-07 Agent 能力扩展
+
+- 后端新增统一 Agent 入口 `POST /api/agent/chat`，旧 `POST /api/agent/order/parse` 保留兼容。
+- Agent 当前实现 5 个白名单能力：`search_stalls`、`create_order`、`submit_review`、`submit_complaint`、`system_help`。
+- DeepSeek 只负责意图识别和参数抽取，后端负责白名单 action 执行；未配置 key 或调用失败时走本地规则降级。
+- H5 Agent 页从“智能订单 Agent”改为“系统 Agent”，输入框文案改为通用提示，不再只强调点单。
+- H5 Agent 操作台支持展示后端 action 和 cards，确认后可写入本地订单、评价、投诉或跳转系统入口。
+- 新增 `docs/agent-skills/SKILL.md` 作为 Agent 总 skill，`docs/agent-skills/skills/*.md` 记录 5 个小 skill 的参数和响应格式。
+- 未实现的 Agent API 统一记录在 `docs/agent-skills/TODO.md`。
+- 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm -r build`。
+
+### 2026-06-07 Agent 交互规则修正
+
+- `search_stalls` 回复会把摊位名称、分类、营业状态、距离、评分和地址加工进自然语言回复，同时保留 cards。
+- H5 Agent 会话保存到 localStorage，保留 24 小时，右侧新增会话列表和新会话入口。
+- 后端按 skill 必需参数规则校验，参数不足返回 `ask_clarification`，不调用功能 API。
+- 右侧操作台新增 `processSteps` 流动式处理过程：识别意图、检查参数、调用功能 API。
+- 移除本地规则降级执行；DeepSeek 调用失败最多重试 3 次，仍失败返回 `unavailable`。
+- `deploy/scripts/start-dev.ps1` 会把当前 shell 中的 `DEEPSEEK_*` 环境变量传给后端进程，但不写入文件。
+- 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm --filter @yuntanfang/h5 build`。
+
+### 2026-06-08 Agent 订单参数校验修正
+
+- `create_order` 必须有用户明确说出的商品名；只有摊位名或“我想预约”时返回追问，不生成订单草稿。
+- 后端会校验 `productName` 是否出现在当前用户输入中，防止模型按摊位默认补“招牌汤粉”等商品。
+- `docs/agent-skills/skills/create-order.md` 已写入禁止默认补商品规则和纠正语处理原则。
+
+### 2026-06-08 Agent API 参数全量审计
+
+- 对 5 个当前白名单能力完成参数矩阵审计：`search_stalls`、`create_order`、`submit_review`、`submit_complaint`、`system_help`。
+- 后端系统提示和执行校验统一为“模型只抽取，后端校验并执行”；缺必需参数时返回 `ask_clarification`，不调用功能 API。
+- `submit_review` 现在必须有订单指代和明确评分信号；`submit_complaint` 现在必须有投诉对象和问题类型/描述。
+- H5 Agent 确认动作增加二次 payload 校验，防止旧会话或异常响应把默认订单、评价、投诉写入本地 store。
+- `docs/agent-skills/SKILL.md` 和 5 个小 skill 已补齐参数来源规则、必需参数、允许的系统默认值和禁止行为。
+- 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm --filter @yuntanfang/h5 build`。
+
 ## 交接提示
 
 后续 AI 接手时先读：
@@ -248,7 +284,8 @@ H5 用户端和商家端：
 1. `docs/frontend-development.md`
 2. `docs/module-roadmap.md`
 3. `README.md`
-4. `frontend/apps/h5/src/router.ts`
-5. `frontend/apps/admin/src/router.ts`
+4. `docs/agent-skills/SKILL.md`
+5. `frontend/apps/h5/src/router.ts`
+6. `frontend/apps/admin/src/router.ts`
 
 如果继续按原型还原页面，先解压原型 zip 到临时目录，不要提交原型 PDF、临时截图或渲染产物。
