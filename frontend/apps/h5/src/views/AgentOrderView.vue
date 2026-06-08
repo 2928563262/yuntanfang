@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { agentApi, type AgentChatResult } from '@yuntanfang/api'
+import { agentApi, orderApi, type AgentChatResult } from '@yuntanfang/api'
 import { useUserDataStore } from '../stores/userData'
 
 type AgentMessage = { id: string; role: 'assistant' | 'user'; content: string }
@@ -201,7 +201,7 @@ function usePrompt(prompt: string) {
   sendMessage()
 }
 
-function runAction() {
+async function runAction() {
   if (!agentResult.value?.action) {
     return
   }
@@ -215,17 +215,32 @@ function runAction() {
       return
     }
     const quantity = toNumber(payload.quantity, 1)
-    const amount = toText(payload.totalAmount, (quantity * 16).toFixed(2))
-    const order = userData.createOrder({
-      stallId: stallIdFromName(toText(payload.stallName, '烟火小摊')),
-      product,
-      quantity,
-      pickupTime: toText(payload.pickupTime, '今天 19:00'),
-      contact: '',
-      amount,
-      price: (Number(amount) / Math.max(quantity, 1)).toFixed(2)
-    })
-    router.push(`/orders/${order.id}`)
+    const orderPayload = isRecord(payload.orderPayload)
+      ? payload.orderPayload
+      : {
+          vendorId: toNumber(payload.vendorId, 0),
+          stallId: stallIdFromName(toText(payload.stallName, '烟火小摊')),
+          stallName: toText(payload.stallName, '烟火小摊'),
+          pickupTime: toText(payload.pickupTime, '今天 19:00'),
+          contactPhone: '',
+          remark: 'Agent 创建订单草稿',
+          items: [
+            {
+              productId: toNumber(payload.productId, 0) || undefined,
+              productName: product,
+              quantity,
+              price: toText(payload.price, '0.00')
+            }
+          ]
+        }
+    try {
+      const response = await orderApi.create(orderPayload)
+      const order = response.data.data
+      pushMessage('assistant', `订单已创建，订单号 ${order.id}。用户端和商家端都会同步显示。`)
+      router.push(`/orders/${order.id}`)
+    } catch {
+      pushMessage('assistant', '订单创建失败。请确认已用普通用户账号登录，然后再试一次。')
+    }
     return
   }
 
@@ -292,7 +307,7 @@ function newSession(): AgentSession {
     updatedAt: Date.now(),
     messages: [{ id: 'welcome', role: 'assistant', content: '你可以问我入口在哪，也可以直接让我找摊位、下单、评价或投诉。' }],
     result: null,
-    suggestedPrompts: ['找地方特色摊位', '预约一份招牌汤粉', '订单怎么评价', '投诉卫生问题']
+    suggestedPrompts: ['找地方特色摊位', '预约一份招牌烤串', '订单怎么评价', '投诉卫生问题']
   }
 }
 
@@ -332,7 +347,7 @@ function cardLines(card: Record<string, unknown>) {
     route: '入口'
   }
   return Object.entries(card)
-    .filter(([key]) => !['id', 'orderId', 'complaintId', 'reviewId', 'name', 'stallName', 'target', 'topic'].includes(key))
+    .filter(([key]) => !['id', 'orderId', 'complaintId', 'reviewId', 'name', 'stallName', 'target', 'topic', 'orderPayload'].includes(key))
     .slice(0, 8)
     .map(([key, value]) => `${labels[key] ?? key}：${Array.isArray(value) ? value.join('、') : value}`)
 }
@@ -348,6 +363,10 @@ function toText(value: unknown, fallback: string) {
 
 function strictText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function isRecord(value: unknown): value is Record<string, any> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value))
 }
 
 function toNumber(value: unknown, fallback: number) {

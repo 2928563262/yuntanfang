@@ -277,6 +277,14 @@ H5 用户端和商家端：
 - `docs/agent-skills/SKILL.md` 和 5 个小 skill 已补齐参数来源规则、必需参数、允许的系统默认值和禁止行为。
 - 验证命令：`mvn -DskipTests test-compile`、`corepack pnpm --filter @yuntanfang/h5 build`。
 
+### 2026-06-08 真实订单后端合入与 Agent 对齐
+
+- 合入 `origin/feature/real-data-integration`，新增真实业务表、MyBatis Plus mapper/service，以及 `POST /api/orders`、`GET /api/orders/my`、`GET /api/vendor/orders`。
+- Agent `create_order` 从真实 `t_product` 上架商品中解析商品，反查 `vendorId`、`stallId`、`stallName` 和价格，不再生成 mock 订单号。
+- H5 Agent 确认下单改为调用 `orderApi.create(action.payload.orderPayload)`；成功后跳转真实订单详情。
+- 用户端订单列表和商家端订单列表读取同一张订单表，Agent 创建的订单可在普通用户和摊主账号两端同步看到。
+- 当前可预约演示商品与数据库种子保持一致：`招牌烤串(10串)`、`现炸薯条`、`鲜榨果汁`。
+
 ## 交接提示
 
 后续 AI 接手时先读：

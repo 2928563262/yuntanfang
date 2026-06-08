@@ -82,7 +82,7 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
   "intent": "create_order",
   "parameters": {
     "stallName": "烟火小摊",
-    "productName": "招牌汤粉",
+    "productName": "招牌烤串(10串)",
     "quantity": 2,
     "pickupTime": "今天 18:30",
     "contact": ""
@@ -118,7 +118,7 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 | --- | --- | --- | --- |
 | `create_order` | `quantity` | `1` | 用户未说数量 |
 | `create_order` | `pickupTime` | `今天 19:00` | 用户未说取货时间 |
-| `create_order` | `stallName` | 从商品目录反查唯一摊位 | 用户明确商品但未说摊位 |
+| `create_order` | `vendorId`/`stallId`/`stallName`/`price` | 从真实商品和摊位表反查 | 用户明确商品但未说摊位 |
 | `submit_review` | `orderId` | 最近可评价订单 `1002` | 用户明确说“上一单/最近一单/这单/这个订单” |
 | `submit_review` | `rating` | `5/3/1` | 用户明确说好评/中评或一般/差评 |
 | `submit_review` | `content` | 按评分生成匹配文案 | 用户只给评分或好评/中评/差评 |
@@ -144,7 +144,7 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 ## 前端执行规则
 
 - `open_route`：跳转到 `action.route`。
-- `create_order`：用 `action.payload` 写入 H5 本地订单 store，再跳转订单详情。
+- `create_order`：用 `action.payload.orderPayload` 调用 `POST /api/orders`，成功后跳转真实订单详情。
 - `submit_review`：写入 H5 本地评价 store，再跳转 `/my-reviews`。
 - `submit_complaint`：写入 H5 本地投诉 store，再跳转 `/complaints`。
 

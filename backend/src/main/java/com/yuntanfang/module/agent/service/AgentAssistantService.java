@@ -1,11 +1,16 @@
 package com.yuntanfang.module.agent.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yuntanfang.module.agent.dto.AgentChatRequest;
 import com.yuntanfang.module.agent.vo.AgentChatResult;
 import com.yuntanfang.module.agent.vo.AgentChatResult.AgentAction;
 import com.yuntanfang.module.agent.vo.AgentChatResult.ProcessStep;
+import com.yuntanfang.module.product.entity.Product;
+import com.yuntanfang.module.product.mapper.ProductMapper;
+import com.yuntanfang.module.stall.entity.Stall;
+import com.yuntanfang.module.stall.mapper.StallMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,6 +20,7 @@ import org.springframework.web.client.RestClient;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -25,15 +31,17 @@ public class AgentAssistantService {
 
     private static final List<Map<String, Object>> STALLS = List.of(
             stall(1, "烟火小摊", "林师傅", "地方特色", "营业中", "680m", "4.8", "北站中心公园东门",
-                    List.of("招牌汤粉", "手作糍粑", "冰糖绿豆沙")),
+                    List.of("招牌烤串(10串)", "现炸薯条", "鲜榨果汁")),
             stall(2, "乡野新农人鲜铺", "陈小禾", "农家特产", "今日推荐", "1.2km", "4.7", "市民广场南侧临时摊区",
-                    List.of("当季蔬果", "农家土鸡蛋", "手工辣酱")),
-            stall(3, "守艺糖画铺", "周老师", "非遗好物", "即将出摊", "2.0km", "4.9", "老街口文创夜市",
-                    List.of("生肖糖画", "定制糖牌", "糖画体验"))
+                    List.of("招牌烤串(10串)", "现炸薯条", "鲜榨果汁")),
+            stall(3, "非遗手作摊", "周老师", "非遗好物", "即将出摊", "2.0km", "4.9", "老街口文创夜市",
+                    List.of("手作体验", "文创小物"))
     );
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final ProductMapper productMapper;
+    private final StallMapper stallMapper;
     private final String apiKey;
     private final String model;
 
@@ -41,12 +49,16 @@ public class AgentAssistantService {
             @Value("${app.deepseek.base-url:https://api.deepseek.com}") String baseUrl,
             @Value("${app.deepseek.api-key:}") String apiKey,
             @Value("${app.deepseek.model:deepseek-v4-pro}") String model,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ProductMapper productMapper,
+            StallMapper stallMapper
     ) {
         this.restClient = RestClient.builder().baseUrl(baseUrl).build();
         this.apiKey = apiKey;
         this.model = model;
         this.objectMapper = objectMapper;
+        this.productMapper = productMapper;
+        this.stallMapper = stallMapper;
     }
 
     public AgentChatResult chat(AgentChatRequest request) {
@@ -107,7 +119,7 @@ public class AgentAssistantService {
                 4. submit_complaint: 参数 target, type, description。必须有投诉对象 target，且必须有 type 或 description。
                 5. system_help: 参数 topic。
                 已知摊位：烟火小摊、乡野新农人鲜铺、守艺糖画铺。
-                已知商品：招牌汤粉、手作糍粑、冰糖绿豆沙、当季蔬果、农家土鸡蛋、手工辣酱、生肖糖画、定制糖牌、糖画体验。
+                已知商品：招牌烤串(10串)、现炸薯条、鲜榨果汁。
                 若用户只是问怎么用、入口在哪、能做什么，使用 system_help。
                 """;
     }
@@ -196,20 +208,42 @@ public class AgentAssistantService {
 
     private AgentChatResult createOrder(Map<String, Object> parameters, String raw) {
         String productName = safe(parameters.get("productName"));
-        String stallName = blankToDefault(safe(parameters.get("stallName")), stallNameForProduct(productName));
+        Product product = findProduct(productName);
+        Stall stall = findStallForProduct(product);
+        String stallName = stall == null ? blankToDefault(safe(parameters.get("stallName")), "烟火小摊") : stall.getStallName();
         int quantity = Math.max(1, toInt(parameters.get("quantity"), 1));
         String pickupTime = blankToDefault(safe(parameters.get("pickupTime")), "今天 19:00");
-        String amount = String.format(Locale.ROOT, "%.2f", quantity * 16.0);
+        String price = product.getPrice() == null ? "0.00" : product.getPrice().toPlainString();
+        String amount = product.getPrice() == null
+                ? "0.00"
+                : product.getPrice().multiply(java.math.BigDecimal.valueOf(quantity)).toPlainString();
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("productId", product.getId());
+        item.put("productName", product.getProductName());
+        item.put("quantity", quantity);
+        item.put("price", price);
+        Map<String, Object> orderPayload = new LinkedHashMap<>();
+        orderPayload.put("vendorId", product.getVendorId());
+        orderPayload.put("stallId", stall == null ? null : stall.getId());
+        orderPayload.put("stallName", stallName);
+        orderPayload.put("pickupTime", pickupTime);
+        orderPayload.put("contactPhone", "");
+        orderPayload.put("remark", "Agent 创建订单草稿");
+        orderPayload.put("items", List.of(item));
         Map<String, Object> card = new LinkedHashMap<>();
-        card.put("orderId", nextMockId());
+        card.put("productId", product.getId());
+        card.put("vendorId", product.getVendorId());
+        card.put("stallId", stall == null ? null : stall.getId());
         card.put("stallName", stallName);
-        card.put("productName", productName);
+        card.put("productName", product.getProductName());
         card.put("quantity", quantity);
         card.put("pickupTime", pickupTime);
+        card.put("price", price);
         card.put("totalAmount", amount);
         card.put("status", "待支付");
+        card.put("orderPayload", orderPayload);
         return result(
-                "已生成预约单草稿：" + stallName + "，" + productName + " x" + quantity + "，" + pickupTime + " 取。你可以确认后到订单详情支付。",
+                "已生成预约单草稿：" + stallName + "，" + product.getProductName() + " x" + quantity + "，" + pickupTime + " 取。确认后会创建真实订单，用户端和商家端都能看到。",
                 "create_order",
                 new AgentAction("create_order", "确认创建订单", "/orders", card),
                 List.of(card),
@@ -290,7 +324,7 @@ public class AgentAssistantService {
                 action,
                 cards,
                 processSteps(intent, "completed", cards.size()),
-                List.of("找地方特色摊位", "预约一份招牌汤粉", "给上一单好评", "投诉烟火小摊卫生问题"),
+                List.of("找地方特色摊位", "预约一份招牌烤串", "给上一单好评", "投诉烟火小摊卫生问题"),
                 "deepseek",
                 raw == null ? "" : raw
         );
@@ -306,10 +340,10 @@ public class AgentAssistantService {
                     List.of("找地方特色摊位", "找农家特产", "找非遗好物")
             );
             case "create_order" -> insufficient(
-                    safe(parameters.get("productName")).isBlank() || !hasExplicitProduct(message, safe(parameters.get("productName"))),
-                    "你想预约哪个商品？比如招牌汤粉、农家土鸡蛋、生肖糖画。请先告诉我具体商品，再帮你生成订单。",
+                    !isValidOrderProduct(parameters, message),
+                    "你想预约哪个商品？目前可预约招牌烤串(10串)、现炸薯条、鲜榨果汁。请先告诉我具体商品，再帮你生成订单。",
                     "create_order",
-                    List.of("预约招牌汤粉", "预约农家土鸡蛋", "预约生肖糖画")
+                    List.of("预约招牌烤串", "预约现炸薯条", "预约鲜榨果汁")
             );
             case "submit_review" -> insufficient(
                     !hasOrderReference(parameters, message) || !hasRatingSignal(parameters, message),
@@ -428,6 +462,15 @@ public class AgentAssistantService {
                 || value.equals("帮我找附近摊位");
     }
 
+    private boolean isValidOrderProduct(Map<String, Object> parameters, String message) {
+        String productName = safe(parameters.get("productName"));
+        if (productName.isBlank()) {
+            return false;
+        }
+        Product product = findProduct(productName);
+        return product != null && hasExplicitProduct(message, product.getProductName());
+    }
+
     private static boolean hasExplicitProduct(String message, String productName) {
         String text = message == null ? "" : message;
         if (productName.isBlank()) {
@@ -440,15 +483,9 @@ public class AgentAssistantService {
             return true;
         }
         return switch (productName) {
-            case "招牌汤粉" -> containsAny(text, "汤粉", "粉");
-            case "手作糍粑" -> containsAny(text, "糍粑");
-            case "冰糖绿豆沙" -> containsAny(text, "绿豆沙", "饮品");
-            case "当季蔬果" -> containsAny(text, "蔬果", "水果", "蔬菜");
-            case "农家土鸡蛋" -> containsAny(text, "鸡蛋", "土鸡蛋");
-            case "手工辣酱" -> containsAny(text, "辣酱");
-            case "生肖糖画" -> containsAny(text, "糖画");
-            case "定制糖牌" -> containsAny(text, "糖牌");
-            case "糖画体验" -> containsAny(text, "糖画体验", "体验");
+            case "招牌烤串(10串)" -> containsAny(text, "烤串", "串");
+            case "现炸薯条" -> containsAny(text, "薯条");
+            case "鲜榨果汁" -> containsAny(text, "果汁", "饮品");
             default -> false;
         };
     }
@@ -456,15 +493,9 @@ public class AgentAssistantService {
     private static boolean isNegatedProduct(String message, String productName) {
         return containsAny(message, "没说", "不是", "不要", "不想", "别")
                 && (message.contains(productName) || switch (productName) {
-                    case "招牌汤粉" -> containsAny(message, "汤粉", "粉");
-                    case "手作糍粑" -> containsAny(message, "糍粑");
-                    case "冰糖绿豆沙" -> containsAny(message, "绿豆沙", "饮品");
-                    case "当季蔬果" -> containsAny(message, "蔬果", "水果", "蔬菜");
-                    case "农家土鸡蛋" -> containsAny(message, "鸡蛋", "土鸡蛋");
-                    case "手工辣酱" -> containsAny(message, "辣酱");
-                    case "生肖糖画" -> containsAny(message, "糖画");
-                    case "定制糖牌" -> containsAny(message, "糖牌");
-                    case "糖画体验" -> containsAny(message, "糖画体验", "体验");
+                    case "招牌烤串(10串)" -> containsAny(message, "烤串", "串");
+                    case "现炸薯条" -> containsAny(message, "薯条");
+                    case "鲜榨果汁" -> containsAny(message, "果汁", "饮品");
                     default -> false;
                 });
     }
@@ -520,17 +551,41 @@ public class AgentAssistantService {
         return "整体体验不错，取餐流程顺畅。";
     }
 
-    private static String stallNameForProduct(String productName) {
-        if (containsAny(productName, "招牌汤粉", "手作糍粑", "冰糖绿豆沙")) {
-            return "烟火小摊";
+    private Product findProduct(String productName) {
+        String query = safe(productName);
+        if (query.isBlank()) {
+            return null;
         }
-        if (containsAny(productName, "当季蔬果", "农家土鸡蛋", "手工辣酱")) {
-            return "乡野新农人鲜铺";
+        return productMapper.selectList(new LambdaQueryWrapper<Product>()
+                        .eq(Product::getStatus, "on_sale"))
+                .stream()
+                .filter(product -> product.getProductName() != null)
+                .filter(product -> product.getProductName().contains(query)
+                        || query.contains(product.getProductName())
+                        || productAliasMatches(query, product.getProductName()))
+                .min(Comparator.comparing(product -> product.getProductName().length()))
+                .orElse(null);
+    }
+
+    private Stall findStallForProduct(Product product) {
+        if (product == null || product.getVendorId() == null) {
+            return null;
         }
-        if (containsAny(productName, "生肖糖画", "定制糖牌", "糖画体验")) {
-            return "守艺糖画铺";
-        }
-        return "烟火小摊";
+        return stallMapper.selectList(new LambdaQueryWrapper<Stall>()
+                        .eq(Stall::getVendorId, product.getVendorId())
+                        .orderByAsc(Stall::getId))
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static boolean productAliasMatches(String query, String productName) {
+        return switch (productName) {
+            case "招牌烤串(10串)" -> containsAny(query, "烤串", "串");
+            case "现炸薯条" -> containsAny(query, "薯条");
+            case "鲜榨果汁" -> containsAny(query, "果汁", "饮品");
+            default -> false;
+        };
     }
 
     private static int toInt(Object value, int fallback) {
