@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.yuntanfang.common.BusinessException;
 import com.yuntanfang.common.PageResult;
 import com.yuntanfang.module.order.entity.Order;
+import com.yuntanfang.module.order.entity.OrderItem;
 import com.yuntanfang.module.order.entity.OrderStatusLog;
+import com.yuntanfang.module.order.mapper.OrderItemMapper;
 import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.order.mapper.OrderStatusLogMapper;
 import com.yuntanfang.module.product.entity.Product;
@@ -43,6 +45,7 @@ public class VendorService {
     private final StallCheckinMapper stallCheckinMapper;
     private final ProductMapper productMapper;
     private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
 
     private Vendor requireVendor(Long userId) {
@@ -185,6 +188,31 @@ public class VendorService {
         List<Order> list = orderMapper.selectList(new LambdaQueryWrapper<Order>()
                 .eq(Order::getVendorId, vendor.getId()).orderByDesc(Order::getId));
         return PageResult.of(list);
+    }
+
+    public PageResult<Map<String, Object>> ordersWithItems(Long userId) {
+        PageResult<Order> page = orders(userId);
+        List<Map<String, Object>> records = page.records().stream()
+                .map(order -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", order.getId());
+                    row.put("userId", order.getUserId());
+                    row.put("vendorId", order.getVendorId());
+                    row.put("stallId", order.getStallId());
+                    row.put("stallName", order.getStallName());
+                    row.put("orderStatus", order.getOrderStatus());
+                    row.put("totalAmount", order.getTotalAmount());
+                    row.put("pickupTime", order.getPickupTime());
+                    row.put("contactPhone", order.getContactPhone());
+                    row.put("remark", order.getRemark());
+                    row.put("createdAt", order.getCreatedAt());
+                    row.put("updatedAt", order.getUpdatedAt());
+                    row.put("items", orderItemMapper.selectList(
+                            new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId())));
+                    return row;
+                })
+                .toList();
+        return new PageResult<>(page.total(), page.pageNo(), page.pageSize(), records);
     }
 
     public PageResult<Product> products(Long userId) {

@@ -80,6 +80,31 @@ public class OrderService {
         return new PageResult<>(page.getTotal(), page.getCurrent(), page.getSize(), page.getRecords());
     }
 
+    public PageResult<Map<String, Object>> myWithItems(Long userId, long pageNo, long pageSize) {
+        PageResult<Order> page = my(userId, pageNo, pageSize);
+        List<Map<String, Object>> records = page.records().stream()
+                .map(order -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", order.getId());
+                    row.put("userId", order.getUserId());
+                    row.put("vendorId", order.getVendorId());
+                    row.put("stallId", order.getStallId());
+                    row.put("stallName", order.getStallName());
+                    row.put("orderStatus", order.getOrderStatus());
+                    row.put("totalAmount", order.getTotalAmount());
+                    row.put("pickupTime", order.getPickupTime());
+                    row.put("contactPhone", order.getContactPhone());
+                    row.put("remark", order.getRemark());
+                    row.put("createdAt", order.getCreatedAt());
+                    row.put("updatedAt", order.getUpdatedAt());
+                    row.put("items", orderItemMapper.selectList(
+                            new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId())));
+                    return row;
+                })
+                .toList();
+        return new PageResult<>(page.total(), page.pageNo(), page.pageSize(), records);
+    }
+
     public Map<String, Object> detail(Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null) {

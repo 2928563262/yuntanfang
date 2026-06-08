@@ -21,6 +21,9 @@
           </div>
           <span class="status-tag">{{ order.status }}</span>
         </div>
+        <div class="order-items">
+          <span v-for="item in order.items" :key="item.key">{{ item.text }}</span>
+        </div>
         <div class="meta-row">
           <span>订单号 {{ order.id }}</span>
           <span>金额 ¥{{ order.amount }}</span>
@@ -74,11 +77,27 @@ const filteredOrders = computed(() => {
     stall: o.stallName ?? `摊位#${o.stallId ?? '-'}`,
     time: o.pickupTime ?? '-',
     status: zh(o.orderStatus),
-    amount: o.totalAmount != null ? Number(o.totalAmount).toFixed(2) : '0.00'
+    amount: o.totalAmount != null ? Number(o.totalAmount).toFixed(2) : '0.00',
+    items: normalizeItems(o.items)
   }))
   if (activeTab.value === '全部') {
     return list
   }
   return list.filter((o) => o.status === activeTab.value)
 })
+
+function normalizeItems(items: unknown) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [{ key: 'empty', text: '商品明细：暂无' }]
+  }
+  return items.map((item: any, index: number) => {
+    const name = item.productName ?? `商品#${item.productId ?? index + 1}`
+    const quantity = Number(item.quantity ?? 1)
+    const price = item.price != null ? ` ¥${Number(item.price).toFixed(2)}` : ''
+    return {
+      key: `${item.id ?? index}-${name}`,
+      text: `${name} x${quantity}${price}`
+    }
+  })
+}
 </script>

@@ -15,6 +15,7 @@ public class Product {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long vendorId;
+    private Long stallId;
     private Long categoryId;
     private String productName;
     private BigDecimal price;

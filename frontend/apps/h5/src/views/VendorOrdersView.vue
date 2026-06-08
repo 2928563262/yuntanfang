@@ -17,6 +17,9 @@
           </div>
           <span class="status-tag">{{ zh(order.orderStatus) }}</span>
         </div>
+        <div class="order-items">
+          <span v-for="item in normalizeItems(order.items)" :key="item.key">{{ item.text }}</span>
+        </div>
         <div class="meta-row">
           <span>订单号 {{ order.id }}</span>
           <span>取货 {{ order.pickupTime ?? '-' }}</span>
@@ -73,6 +76,21 @@ async function setStatus(id: number, status: string) {
   } catch {
     // 忽略，保持当前列表
   }
+}
+
+function normalizeItems(items: unknown) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [{ key: 'empty', text: '商品明细：暂无' }]
+  }
+  return items.map((item: any, index: number) => {
+    const name = item.productName ?? `商品#${item.productId ?? index + 1}`
+    const quantity = Number(item.quantity ?? 1)
+    const price = item.price != null ? ` ¥${Number(item.price).toFixed(2)}` : ''
+    return {
+      key: `${item.id ?? index}-${name}`,
+      text: `${name} x${quantity}${price}`
+    }
+  })
 }
 
 onMounted(load)

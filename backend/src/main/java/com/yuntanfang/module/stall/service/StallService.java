@@ -55,7 +55,7 @@ public class StallService {
             throw new BusinessException("摊位不存在");
         }
         List<Product> list = productMapper.selectList(new LambdaQueryWrapper<Product>()
-                .eq(stall.getVendorId() != null, Product::getVendorId, stall.getVendorId())
+                .eq(Product::getStallId, stallId)
                 .orderByDesc(Product::getId));
         return PageResult.of(list);
     }

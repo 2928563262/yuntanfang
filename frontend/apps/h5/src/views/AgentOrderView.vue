@@ -236,7 +236,7 @@ async function runAction() {
     try {
       const response = await orderApi.create(orderPayload)
       const order = response.data.data
-      pushMessage('assistant', `订单已创建，订单号 ${order.id}。用户端和商家端都会同步显示。`)
+      pushMessage('assistant', `订单已创建，订单号 ${order.id}。`)
       router.push(`/orders/${order.id}`)
     } catch {
       pushMessage('assistant', '订单创建失败。请确认已用普通用户账号登录，然后再试一次。')
@@ -305,7 +305,7 @@ function newSession(): AgentSession {
     id: `${Date.now()}-${Math.random()}`,
     title: '新的会话',
     updatedAt: Date.now(),
-    messages: [{ id: 'welcome', role: 'assistant', content: '你可以问我入口在哪，也可以直接让我找摊位、下单、评价或投诉。' }],
+    messages: [{ id: 'welcome', role: 'assistant', content: '我是云摊坊小助手，可以帮你处理常用事务。' }],
     result: null,
     suggestedPrompts: ['找地方特色摊位', '预约一份招牌烤串', '订单怎么评价', '投诉卫生问题']
   }

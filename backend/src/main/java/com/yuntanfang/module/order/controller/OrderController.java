@@ -56,11 +56,11 @@ public class OrderController {
     }
 
     @GetMapping("/my")
-    public ApiResponse<PageResult<Order>> my(
+    public ApiResponse<PageResult<Map<String, Object>>> my(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(defaultValue = "1") long pageNo,
             @RequestParam(defaultValue = "10") long pageSize) {
-        return ApiResponse.ok(orderService.my(authSupport.currentUserId(authorization), pageNo, pageSize));
+        return ApiResponse.ok(orderService.myWithItems(authSupport.currentUserId(authorization), pageNo, pageSize));
     }
 
     @GetMapping("/{id}")

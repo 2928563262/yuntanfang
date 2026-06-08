@@ -104,7 +104,7 @@ public class AgentOrderService {
         String pickupTime = text.contains("18:30") ? "今天 18:30" : "今天 19:00";
         String total = String.format("%.2f", quantity * 16.0);
         return new AgentOrderResult(
-                "已识别：" + stallName + "，" + product + " x" + quantity + "，建议确认后生成预约订单。",
+                "已识别：" + stallName + "，" + product + " x" + quantity + "。",
                 stallName,
                 List.of(new AgentOrderResult.OrderItem(product, quantity, "")),
                 pickupTime,

@@ -121,9 +121,9 @@ public class VendorController {
     }
 
     @GetMapping("/orders")
-    public ApiResponse<PageResult<Order>> orders(
+    public ApiResponse<PageResult<Map<String, Object>>> orders(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return ApiResponse.ok(vendorService.orders(uid(authorization)));
+        return ApiResponse.ok(vendorService.ordersWithItems(uid(authorization)));
     }
 
     @PutMapping("/orders/{id}/status")
