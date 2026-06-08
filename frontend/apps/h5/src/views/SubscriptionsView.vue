@@ -10,21 +10,18 @@
 
     <section class="section content-grid">
       <div class="list-stack">
-        <article v-for="item in userData.subscriptions.value" :key="item.id" class="list-card">
+        <article v-for="item in subscriptions" :key="item.id" class="list-card">
           <div class="list-card-header">
             <div>
-              <h3>{{ item.stall }}</h3>
-              <p>{{ item.time }} · {{ item.channel }}</p>
+              <h3>{{ item.vendorName ?? ('摊主#' + item.vendorId) }}</h3>
+              <p>出摊提醒 · 站内信</p>
             </div>
-            <span class="status-tag">{{ item.status }}</span>
+            <span class="status-tag">{{ item.status === 'active' ? '已开启' : '已暂停' }}</span>
           </div>
-          <div class="action-grid">
-            <button class="ghost-pill" type="button" @click="userData.toggleSubscriptionStatus(item.id)">
-              {{ item.status === '已开启' ? '暂停' : '恢复' }}
-            </button>
-            <RouterLink class="ghost-pill" :to="`/stalls/${item.stallId}`">查看摊位</RouterLink>
-            <button class="primary-pill" type="button">授权通知</button>
-          </div>
+        </article>
+        <article v-if="!loading && subscriptions.length === 0" class="list-card">
+          <h3>还没有订阅</h3>
+          <p>在摊位详情页点「订阅提醒」，开摊时会通知你。</p>
         </article>
       </div>
 
@@ -46,7 +43,23 @@
 </template>
 
 <script setup lang="ts">
-import { useUserDataStore } from '../stores/userData'
+import { onMounted, ref } from 'vue'
+import { interactionApi } from '@yuntanfang/api'
 
-const userData = useUserDataStore()
+const subscriptions = ref<any[]>([])
+const loading = ref(false)
+
+async function load() {
+  loading.value = true
+  try {
+    const res = await interactionApi.subscriptions()
+    subscriptions.value = res.data.data?.records ?? []
+  } catch {
+    subscriptions.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
 </script>

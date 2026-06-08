@@ -16,11 +16,6 @@
           <strong>北站中心公园</strong>
           <small>18:00 后陆续出摊</small>
         </div>
-        <div class="market-map">
-          <span class="market-pin pin-one">汤粉</span>
-          <span class="market-pin pin-two">鲜铺</span>
-          <span class="market-pin pin-three">糖画</span>
-        </div>
       </div>
     </section>
 
@@ -38,19 +33,6 @@
           <van-icon :name="item.icon" />
           <strong>{{ item.title }}</strong>
           <span>{{ item.desc }}</span>
-        </RouterLink>
-      </div>
-    </section>
-
-    <section class="home-section">
-      <div class="section-head">
-        <h2>特色专区</h2>
-        <RouterLink class="muted" to="/stalls">全部</RouterLink>
-      </div>
-      <div class="home-zone-grid">
-        <RouterLink v-for="zone in featureZones" :key="zone.title" :class="['home-zone-card', `zone-${zone.tone}`]" to="/stalls">
-          <strong>{{ zone.title }}</strong>
-          <span>{{ zone.desc }}</span>
         </RouterLink>
       </div>
     </section>
@@ -82,22 +64,19 @@
           <RouterLink v-for="stall in filteredStalls" :key="stall.id" class="home-stall-card" :to="`/stalls/${stall.id}`">
             <div class="home-stall-top">
               <div>
-                <strong>{{ stall.name }}</strong>
-                <span>{{ stall.vendor }} · {{ stall.category }}</span>
+                <strong>{{ stall.stallName }}</strong>
+                <span>{{ stall.vendorName }} · {{ stall.category }}</span>
               </div>
-              <em>{{ stall.status }}</em>
+              <em>{{ statusText(stall.businessStatus) }}</em>
             </div>
-            <p>{{ stall.story }}</p>
-            <div class="home-product-row">
-              <span v-for="product in stall.products" :key="product">{{ product }}</span>
-            </div>
+            <p>{{ stall.description }}</p>
             <div class="meta-row">
               <span>{{ stall.distance }}</span>
               <span>{{ stall.address }}</span>
-              <span>评分 {{ stall.rating }}</span>
+              <span>评分 {{ stall.rating ?? '-' }}</span>
             </div>
           </RouterLink>
-          <article v-if="filteredStalls.length === 0" class="home-empty">
+          <article v-if="!loading && filteredStalls.length === 0" class="home-empty">
             <strong>当前分类暂无摊位</strong>
             <span>换个分类看看，或去全部摊位浏览附近好摊。</span>
           </article>
@@ -106,13 +85,17 @@
 
       <aside class="home-side-panel">
         <div class="section-head">
-          <h2>平台提醒</h2>
+          <h2>平台公告</h2>
         </div>
         <div class="home-notice-list">
-          <RouterLink v-for="notice in notices" :key="notice.title" class="home-notice" :to="notice.to">
+          <RouterLink v-for="notice in notices" :key="notice.id" class="home-notice" to="/messages">
             <strong>{{ notice.title }}</strong>
-            <span>{{ notice.desc }}</span>
+            <span>{{ notice.content }}</span>
           </RouterLink>
+          <article v-if="notices.length === 0" class="home-notice">
+            <strong>暂无公告</strong>
+            <span>平台公告会显示在这里。</span>
+          </article>
         </div>
       </aside>
     </section>
@@ -120,22 +103,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { categories, featureZones, stalls } from '../data/mock'
+import { contentApi, stallApi } from '@yuntanfang/api'
 
 const router = useRouter()
 const keyword = ref('')
 const activeCategory = ref('全部')
-const categoryOptions = ['全部', ...categories]
-
-const filteredStalls = computed(() => {
-  if (activeCategory.value === '全部') {
-    return stalls
-  }
-
-  return stalls.filter((stall) => stall.category === activeCategory.value)
-})
+const categoryOptions = ['全部', '地方特色', '农家特产', '非遗好物', '甜点饮品', '传统小吃']
+const stalls = ref<any[]>([])
+const notices = ref<any[]>([])
+const loading = ref(false)
 
 const quickActions = [
   { title: '智能点单', desc: '一句话预约', icon: 'chat-o', to: '/agent-order' },
@@ -145,11 +123,32 @@ const quickActions = [
   { title: '提交投诉', desc: '问题留痕', icon: 'warning-o', to: '/complaints/create' }
 ]
 
-const notices = [
-  { title: '营业提醒', desc: '烟火小摊 17:30 北站中心公园东门出摊', to: '/messages' },
-  { title: '取餐提示', desc: '预约成功后可在订单里查看取餐时间和摊位地址', to: '/orders' },
-  { title: '公益专区', desc: '微光创业者与助农摊位优先展示', to: '/stalls' }
-]
+function statusText(s: string) {
+  return s === 'open' ? '营业中' : s === 'closed' ? '休息中' : s
+}
+
+const filteredStalls = computed(() => {
+  if (activeCategory.value === '全部') {
+    return stalls.value
+  }
+  return stalls.value.filter((s) => s.category === activeCategory.value)
+})
+
+async function load() {
+  loading.value = true
+  try {
+    const [s, n] = await Promise.all([stallApi.nearby(), contentApi.notices()])
+    stalls.value = s.data.data?.records ?? []
+    notices.value = n.data.data?.records ?? []
+  } catch {
+    stalls.value = []
+    notices.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
 
 function goSearch() {
   router.push({ path: '/stalls', query: { keyword: keyword.value } })

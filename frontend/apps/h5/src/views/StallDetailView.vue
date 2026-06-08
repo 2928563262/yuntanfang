@@ -7,8 +7,8 @@
 
     <section class="hero-card">
       <p class="eyebrow">{{ stall.category }} · {{ stall.distance }}</p>
-      <h1>{{ stall.name }}</h1>
-      <p>{{ stall.story }}</p>
+      <h1>{{ stall.stallName }}</h1>
+      <p>{{ stall.description }}</p>
       <div class="hero-actions">
         <RouterLink class="primary-pill" :to="`/stalls/${stall.id}/reserve`">预约下单</RouterLink>
         <button class="ghost-pill">一键导航</button>
@@ -20,17 +20,17 @@
         <article class="card">
           <div class="section-head">
             <h2>摊位信息</h2>
-            <span class="status-tag">{{ stall.status }}</span>
+            <span class="status-tag">{{ statusText(stall.businessStatus) }}</span>
           </div>
           <div class="meta-row">
-            <span>摊主：{{ stall.vendor }}</span>
-            <span>评分：{{ stall.rating }}</span>
+            <span>摊主：{{ stall.vendorName }}</span>
+            <span>评分：{{ stall.rating ?? '-' }}</span>
             <span>{{ stall.address }}</span>
           </div>
           <div class="action-grid section">
-            <button class="ghost-pill" type="button" @click="toggleFavorite">{{ isFavorite ? '取消收藏' : '收藏摊位' }}</button>
+            <button class="ghost-pill" type="button" :disabled="favorited" @click="addFavorite">{{ favorited ? '已收藏' : '收藏摊位' }}</button>
             <RouterLink class="ghost-pill" to="/favorites">我的收藏</RouterLink>
-            <button class="ghost-pill" type="button" @click="toggleSubscription">{{ isSubscribed ? '取消提醒' : '订阅提醒' }}</button>
+            <button class="ghost-pill" type="button" :disabled="subscribed" @click="addSubscribe">{{ subscribed ? '已订阅' : '订阅提醒' }}</button>
             <RouterLink class="ghost-pill" to="/stories">摊主故事</RouterLink>
           </div>
         </article>
@@ -41,15 +41,16 @@
             <RouterLink class="muted" to="/orders">查看订单</RouterLink>
           </div>
           <div class="list-stack">
-            <div v-for="product in stall.products" :key="product" class="list-card">
+            <div v-for="product in products" :key="product.id" class="list-card">
               <div class="list-card-header">
                 <div>
-                  <h3>{{ product }}</h3>
-                  <p>支持预约取货，后续接入库存、规格、媒资。</p>
+                  <h3>{{ product.productName }}</h3>
+                  <p>{{ product.description ?? '支持预约取货' }}</p>
                 </div>
-                <strong>¥12 起</strong>
+                <strong>¥{{ product.price ?? '-' }}</strong>
               </div>
             </div>
+            <p v-if="products.length === 0" class="muted">该摊位暂未上架商品。</p>
           </div>
         </article>
 
@@ -59,54 +60,70 @@
             <RouterLink class="muted" to="/my-reviews">我的评价</RouterLink>
           </div>
           <div class="list-stack">
-            <div v-for="review in reviews" :key="`${review.id}-${review.time}`" class="list-card">
+            <div v-for="review in reviews" :key="review.id" class="list-card">
               <div class="list-card-header">
                 <div>
-                  <h3>{{ review.stall }}</h3>
+                  <h3>{{ review.userName ?? '匿名用户' }}</h3>
                   <p>{{ review.content }}</p>
                 </div>
                 <span class="status-tag">{{ review.rating }} 星</span>
               </div>
-              <div class="meta-row">
-                <span>{{ review.time }}</span>
-                <span>{{ review.status }}</span>
-              </div>
             </div>
+            <p v-if="reviews.length === 0" class="muted">暂无评价。</p>
           </div>
         </article>
       </div>
-
-      <aside class="card">
-        <h2>评价概览</h2>
-        <div class="metric-grid">
-          <div class="metric-card"><strong>4.9</strong><span>卫生</span></div>
-          <div class="metric-card"><strong>4.8</strong><span>服务</span></div>
-          <div class="metric-card"><strong>4.7</strong><span>品质</span></div>
-          <div class="metric-card"><strong>4.8</strong><span>性价比</span></div>
-        </div>
-      </aside>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { stalls } from '../data/mock'
-import { useUserDataStore } from '../stores/userData'
+import { interactionApi, stallApi } from '@yuntanfang/api'
 
 const route = useRoute()
-const userData = useUserDataStore()
-const stall = computed(() => stalls.find((item) => item.id === Number(route.params.id)) ?? stalls[0])
-const reviews = computed(() => userData.reviews.value.filter((item) => item.stallId === stall.value.id))
-const isFavorite = computed(() => userData.hasFavorite('摊位', stall.value.id, stall.value.name))
-const isSubscribed = computed(() => userData.subscriptions.value.some((item) => item.stallId === stall.value.id))
+const stall = ref<any>({})
+const products = ref<any[]>([])
+const reviews = ref<any[]>([])
+const favorited = ref(false)
+const subscribed = ref(false)
 
-function toggleFavorite() {
-  userData.toggleStallFavorite(stall.value.id)
+function statusText(s: string) {
+  return s === 'open' ? '营业中' : s === 'closed' ? '休息中' : s
 }
 
-function toggleSubscription() {
-  userData.toggleSubscription(stall.value.id)
+async function load() {
+  const id = route.params.id as string
+  try {
+    const [d, p, r] = await Promise.all([stallApi.detail(id), stallApi.products(id), stallApi.reviews(id)])
+    stall.value = d.data.data ?? {}
+    products.value = p.data.data?.records ?? []
+    reviews.value = r.data.data?.records ?? []
+  } catch {
+    stall.value = {}
+  }
 }
+
+async function addFavorite() {
+  try {
+    await interactionApi.favorite({ bizType: 'stall', bizId: Number(stall.value.id), bizName: stall.value.stallName })
+    favorited.value = true
+  } catch {
+    // 未登录等情况忽略
+  }
+}
+
+async function addSubscribe() {
+  try {
+    if (stall.value.vendorId) {
+      await interactionApi.subscribe({ vendorId: Number(stall.value.vendorId), vendorName: stall.value.vendorName })
+      subscribed.value = true
+    }
+  } catch {
+    // 忽略
+  }
+}
+
+onMounted(load)
 </script>

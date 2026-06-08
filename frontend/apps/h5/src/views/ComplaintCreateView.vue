@@ -12,8 +12,8 @@
       <form class="card form-list">
         <div class="field-card">
           <label>投诉对象</label>
-          <select v-model="target">
-            <option v-for="stall in stalls" :key="stall.id">{{ stall.name }}</option>
+          <select v-model="targetId">
+            <option v-for="stall in stalls" :key="stall.id" :value="stall.vendorId">{{ stall.stallName }}</option>
           </select>
         </div>
         <div class="field-card">
@@ -29,12 +29,10 @@
           <label>问题描述</label>
           <textarea v-model="description" placeholder="请描述问题发生时间、地点、经过"></textarea>
         </div>
-        <div class="upload-box">
-          <strong>举证材料</strong>
-          <span>图片/视频上传占位，后续接入对象存储</span>
-        </div>
         <p v-if="error" class="form-error">{{ error }}</p>
-        <button class="primary-pill" type="button" @click="submitComplaint">提交工单</button>
+        <button class="primary-pill" type="button" :disabled="submitting" @click="submitComplaint">
+          {{ submitting ? '提交中…' : '提交工单' }}
+        </button>
       </form>
 
       <aside class="card">
@@ -55,29 +53,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { stalls } from '../data/mock'
-import { useUserDataStore } from '../stores/userData'
+import { complaintApi, stallApi } from '@yuntanfang/api'
 
 const router = useRouter()
-const userData = useUserDataStore()
-const target = ref(stalls[0].name)
+const stalls = ref<any[]>([])
+const targetId = ref<number | null>(null)
 const type = ref('卫生问题')
 const description = ref('')
 const error = ref('')
+const submitting = ref(false)
 
-function submitComplaint() {
+onMounted(async () => {
+  try {
+    const res = await stallApi.nearby()
+    stalls.value = res.data.data?.records ?? []
+    targetId.value = stalls.value.find((s) => s.vendorId)?.vendorId ?? null
+  } catch {
+    stalls.value = []
+  }
+})
+
+async function submitComplaint() {
   error.value = ''
   if (!description.value.trim()) {
     error.value = '请填写问题描述'
     return
   }
-  userData.addComplaint({
-    target: target.value,
-    type: type.value,
-    description: description.value
-  })
-  router.push('/complaints')
+  submitting.value = true
+  try {
+    await complaintApi.create({
+      vendorId: targetId.value ?? undefined,
+      description: `[${type.value}] ${description.value}`
+    })
+    router.push('/complaints')
+  } catch (err: any) {
+    error.value = err?.response?.data?.message ?? '提交失败，请确认已登录'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>

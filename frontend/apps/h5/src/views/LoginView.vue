@@ -49,13 +49,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { mockAccounts, mockLogin, saveAuthSession, type MockAccount } from '@yuntanfang/shared'
+import { authApi } from '@yuntanfang/api'
+import { mockAccounts, saveAuthSession, type AppRole, type AuthSession, type MockAccount } from '@yuntanfang/shared'
 
 const router = useRouter()
 const route = useRoute()
 const username = ref('test1')
 const password = ref('123456')
 const errorMessage = ref('')
+const loading = ref(false)
 
 function fillAccount(account: MockAccount) {
   username.value = account.username
@@ -63,21 +65,37 @@ function fillAccount(account: MockAccount) {
   errorMessage.value = ''
 }
 
-function login() {
-  const session = mockLogin(username.value, password.value)
-
-  if (!session) {
-    errorMessage.value = '账号或密码错误'
+async function login() {
+  if (loading.value) {
     return
   }
+  errorMessage.value = ''
+  loading.value = true
+  try {
+    const res = await authApi.login({ username: username.value.trim(), password: password.value })
+    const data = res.data.data
+    const role = data.role as AppRole
 
-  if (session.app === 'admin') {
-    errorMessage.value = 'test3 是管理后台账号，请在管理端登录'
-    return
+    if (role === 'admin') {
+      errorMessage.value = 'test3 是管理后台账号，请在管理端(5174)登录'
+      return
+    }
+
+    const session: AuthSession = {
+      username: data.username ?? username.value.trim(),
+      role,
+      label: role === 'vendor' ? '商家' : '普通用户',
+      app: 'h5',
+      token: data.token
+    }
+    saveAuthSession(session)
+
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    router.push(redirect || (role === 'vendor' ? '/vendor/dashboard' : '/'))
+  } catch (err: any) {
+    errorMessage.value = err?.response?.data?.message ?? '登录失败，请确认后端服务已启动'
+  } finally {
+    loading.value = false
   }
-
-  saveAuthSession(session)
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-  router.push(redirect || (session.role === 'vendor' ? '/vendor/dashboard' : '/'))
 }
 </script>

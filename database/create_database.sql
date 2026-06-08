@@ -1,5 +1,7 @@
 CREATE DATABASE IF NOT EXISTS yun_tan_fang DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 USE yun_tan_fang;
+-- 确保 Docker 初始化导入时按 utf8mb4 解析，避免中文双重编码乱码
+SET NAMES utf8mb4;
 
 -- 待替换为正式 SQL：当前为项目框架阶段的最小结构骨架。
 CREATE TABLE IF NOT EXISTS t_user (

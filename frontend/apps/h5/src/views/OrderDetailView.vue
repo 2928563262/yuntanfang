@@ -2,18 +2,16 @@
   <main class="page">
     <header class="page-header">
       <button class="ghost-pill" @click="$router.back()">返回</button>
-      <RouterLink v-if="order.status === '已完成'" class="ghost-pill" :to="`/reviews/create/${order.id}`">评价</RouterLink>
+      <RouterLink v-if="isCompleted" class="ghost-pill" :to="`/reviews/create/${order.id}`">评价</RouterLink>
       <RouterLink v-else class="ghost-pill" to="/orders">订单列表</RouterLink>
     </header>
 
     <section class="hero-card">
       <p class="eyebrow">订单 {{ order.id }}</p>
-      <h1>{{ order.status }}</h1>
-      <p>{{ order.stall }} · 取货时间 {{ order.time }}</p>
+      <h1>{{ statusText(order.orderStatus) }}</h1>
+      <p>{{ order.stallName }} · 取货时间 {{ order.pickupTime }}</p>
       <div class="hero-actions">
-        <button v-if="order.status === '待支付'" class="primary-pill" type="button" @click="pay">立即支付</button>
-        <button v-if="order.status === '待取餐'" class="primary-pill" type="button" @click="complete">确认取餐</button>
-        <RouterLink v-if="order.status === '已完成'" class="primary-pill" :to="`/reviews/create/${order.id}`">发布评价</RouterLink>
+        <RouterLink v-if="isCompleted" class="primary-pill" :to="`/reviews/create/${order.id}`">发布评价</RouterLink>
         <button class="ghost-pill" type="button">联系摊主</button>
       </div>
     </section>
@@ -23,18 +21,19 @@
         <article class="card">
           <div class="section-head">
             <h2>商品明细</h2>
-            <span class="status-tag">¥{{ order.amount }}</span>
+            <span class="status-tag">¥{{ amount }}</span>
           </div>
           <div class="list-stack">
-            <div v-for="item in order.items" :key="item.name" class="list-card">
+            <div v-for="item in items" :key="item.id" class="list-card">
               <div class="list-card-header">
                 <div>
-                  <h3>{{ item.name }}</h3>
+                  <h3>{{ item.productName ?? ('商品#' + item.productId) }}</h3>
                   <p>数量 x{{ item.quantity }}</p>
                 </div>
-                <strong>¥{{ item.price }}</strong>
+                <strong>¥{{ item.price ?? '-' }}</strong>
               </div>
             </div>
+            <p v-if="items.length === 0" class="muted">无商品明细</p>
           </div>
         </article>
 
@@ -43,26 +42,9 @@
             <h2>取货信息</h2>
           </div>
           <div class="meta-row">
-            <span>{{ order.address }}</span>
-            <span>{{ order.contact }}</span>
-            <span>取餐码 {{ order.pickupCode }}</span>
-          </div>
-        </article>
-
-        <article class="card">
-          <div class="section-head">
-            <h2>支付/退款</h2>
-            <span class="status-tag">{{ paymentStatus }}</span>
-          </div>
-          <div class="meta-row">
-            <span>{{ payment.type }}</span>
-            <span>金额 ¥{{ payment.amount }}</span>
-            <span>{{ payment.updatedAt }}</span>
-          </div>
-          <div class="action-grid section">
-            <button class="primary-pill" type="button" :disabled="order.status !== '待支付'" @click="pay">H5 支付</button>
-            <button class="ghost-pill" type="button" :disabled="!canRefund" @click="refund">申请退款</button>
-            <button class="ghost-pill" type="button" :disabled="!canCancel" @click="cancel">取消订单</button>
+            <span>{{ order.stallName }}</span>
+            <span>联系方式 {{ order.contactPhone ?? '-' }}</span>
+            <span>取货时间 {{ order.pickupTime ?? '-' }}</span>
           </div>
         </article>
       </div>
@@ -70,10 +52,11 @@
       <aside class="card">
         <h2>状态流转</h2>
         <div class="timeline">
-          <div v-for="step in order.timeline" :key="step" class="timeline-item">
+          <div v-for="log in statusLogs" :key="log.id" class="timeline-item">
             <span></span>
-            <strong>{{ step }}</strong>
+            <strong>{{ statusText(log.orderStatus) }}</strong>
           </div>
+          <p v-if="statusLogs.length === 0" class="muted">暂无状态记录</p>
         </div>
       </aside>
     </section>
@@ -81,53 +64,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { paymentRecords } from '../data/mock'
-import { useUserDataStore } from '../stores/userData'
+import { orderApi } from '@yuntanfang/api'
 
 const route = useRoute()
-const userData = useUserDataStore()
-const order = computed(() => userData.findOrder(Number(route.params.id)))
-const payment = computed(() => {
-  const record = paymentRecords.find((item) => item.orderId === order.value.id)
-  return record ?? {
-    id: order.value.id,
-    orderId: order.value.id,
-    type: 'H5 支付',
-    status: paymentStatus.value,
-    amount: order.value.amount,
-    updatedAt: order.value.createdAt
-  }
-})
-const paymentStatus = computed(() => {
-  if (order.value.status === '待支付') {
-    return '待支付'
-  }
-  if (order.value.status === '退款中') {
-    return '退款中'
-  }
-  if (order.value.status === '已取消') {
-    return '已关闭'
-  }
-  return '已支付'
-})
-const canCancel = computed(() => ['待支付', '待接单'].includes(order.value.status))
-const canRefund = computed(() => ['待取餐', '已完成'].includes(order.value.status))
+const order = ref<any>({})
+const items = ref<any[]>([])
+const statusLogs = ref<any[]>([])
 
-function pay() {
-  userData.payOrder(order.value.id)
+const statusZh: Record<string, string> = {
+  created: '待接单',
+  accepted: '备货中',
+  preparing: '备货中',
+  ready: '待取餐',
+  completed: '已完成',
+  reviewed: '已评价',
+  cancelled: '已取消'
+}
+const statusText = (s: string) => statusZh[s] ?? s
+const isCompleted = computed(() => ['completed', 'reviewed'].includes(order.value.orderStatus))
+const amount = computed(() => (order.value.totalAmount != null ? Number(order.value.totalAmount).toFixed(2) : '0.00'))
+
+async function load() {
+  try {
+    const res = await orderApi.detail(route.params.id as string)
+    const data = res.data.data ?? {}
+    order.value = data.order ?? {}
+    items.value = data.items ?? []
+    statusLogs.value = data.statusLogs ?? []
+  } catch {
+    order.value = {}
+  }
 }
 
-function complete() {
-  userData.completeOrder(order.value.id)
-}
-
-function cancel() {
-  userData.cancelOrder(order.value.id)
-}
-
-function refund() {
-  userData.refundOrder(order.value.id)
-}
+onMounted(load)
 </script>

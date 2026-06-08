@@ -26,12 +26,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockLogin, saveAuthSession } from '@yuntanfang/shared'
+import { authApi } from '@yuntanfang/api'
+import { saveAuthSession, type AuthSession } from '@yuntanfang/shared'
 
 const router = useRouter()
 const username = ref('test3')
 const password = ref('123456')
 const errorMessage = ref('')
+const loading = ref(false)
 
 function fillAdmin() {
   username.value = 'test3'
@@ -39,15 +41,34 @@ function fillAdmin() {
   errorMessage.value = ''
 }
 
-function login() {
-  const session = mockLogin(username.value, password.value)
-
-  if (!session || session.role !== 'admin') {
-    errorMessage.value = '请使用管理后台账号 test3 / 123456'
+async function login() {
+  if (loading.value) {
     return
   }
+  errorMessage.value = ''
+  loading.value = true
+  try {
+    const res = await authApi.login({ username: username.value.trim(), password: password.value })
+    const data = res.data.data
 
-  saveAuthSession(session)
-  router.push('/dashboard')
+    if (data.role !== 'admin') {
+      errorMessage.value = '请使用管理后台账号 test3 / 123456'
+      return
+    }
+
+    const session: AuthSession = {
+      username: data.username ?? username.value.trim(),
+      role: 'admin',
+      label: '管理后台',
+      app: 'admin',
+      token: data.token
+    }
+    saveAuthSession(session)
+    router.push('/dashboard')
+  } catch (err: any) {
+    errorMessage.value = err?.response?.data?.message ?? '登录失败，请确认后端服务已启动'
+  } finally {
+    loading.value = false
+  }
 }
 </script>

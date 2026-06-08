@@ -32,7 +32,9 @@
           <input v-model="contact" placeholder="请输入手机号" />
         </div>
         <p v-if="error" class="form-error">{{ error }}</p>
-        <button class="primary-pill" type="button" @click="submitOrder">提交预约</button>
+        <button class="primary-pill" type="button" :disabled="submitting" @click="submitOrder">
+          {{ submitting ? '提交中…' : '提交预约' }}
+        </button>
       </form>
 
       <aside class="card">
@@ -47,8 +49,8 @@
             </div>
           </div>
           <div class="list-card">
-            <h3>支付与取货</h3>
-            <p>当前创建预约单，后续接入 H5 支付、退款和取餐码。</p>
+            <h3>提交后</h3>
+            <p>订单会真实写入后端，你可在「我的订单」看到，摊主登录后也能在工作台看到这单。</p>
           </div>
         </div>
       </aside>
@@ -57,28 +59,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { orderApi, stallApi } from '@yuntanfang/api'
 import { stalls } from '../data/mock'
-import { useUserDataStore } from '../stores/userData'
 
 const route = useRoute()
 const router = useRouter()
-const userData = useUserDataStore()
 const stall = computed(() => stalls.find((item) => item.id === Number(route.params.id)) ?? stalls[0])
 const selectedProduct = ref('')
 const quantity = ref(1)
 const pickupTime = ref('今天 18:30')
 const contact = ref('')
 const error = ref('')
-const totalAmount = computed(() => (quantity.value * 16).toFixed(2))
-const unitPrice = computed(() => (Number(totalAmount.value) / Math.max(quantity.value, 1)).toFixed(2))
+const submitting = ref(false)
+const unitPrice = 16
+const totalAmount = computed(() => (quantity.value * unitPrice).toFixed(2))
+const vendorId = ref<number | null>(null)
 
 watchEffect(() => {
   selectedProduct.value ||= stall.value.products[0] ?? ''
 })
 
-function submitOrder() {
+onMounted(async () => {
+  try {
+    const res = await stallApi.detail(route.params.id as string)
+    vendorId.value = res.data.data?.vendorId ?? null
+  } catch {
+    vendorId.value = null
+  }
+})
+
+async function submitOrder() {
   error.value = ''
   if (!selectedProduct.value) {
     error.value = '请选择商品'
@@ -93,15 +105,21 @@ function submitOrder() {
     return
   }
 
-  const order = userData.createOrder({
-    stallId: stall.value.id,
-    product: selectedProduct.value,
-    quantity: quantity.value,
-    pickupTime: pickupTime.value,
-    contact: contact.value,
-    amount: totalAmount.value,
-    price: unitPrice.value
-  })
-  router.push(`/orders/${order.id}`)
+  submitting.value = true
+  try {
+    await orderApi.create({
+      vendorId: vendorId.value ?? 1,
+      stallId: stall.value.id,
+      stallName: stall.value.name,
+      pickupTime: pickupTime.value,
+      contactPhone: contact.value,
+      items: [{ productName: selectedProduct.value, price: unitPrice, quantity: quantity.value }]
+    } as any)
+    router.push('/orders')
+  } catch (err: any) {
+    error.value = err?.response?.data?.message ?? '下单失败，请确认已登录'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>

@@ -7,6 +7,13 @@ export interface ApiResponse<T> {
   timestamp: string
 }
 
+export interface PageResult<T> {
+  total: number
+  pageNo: number
+  pageSize: number
+  records: T[]
+}
+
 export const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api',
   timeout: 10000
@@ -20,15 +27,100 @@ http.interceptors.request.use((config) => {
   return config
 })
 
+// 收到未认证时清掉旧 token，避免被过期/假 token 卡住
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const code = error?.response?.data?.code
+    if (error?.response?.status === 401 || code === 401) {
+      localStorage.removeItem('ytf_token')
+      localStorage.removeItem('ytf_mock_session')
+    }
+    return Promise.reject(error)
+  }
+)
+
+export interface LoginResult {
+  token: string
+  tokenType: string
+  userId: number
+  username: string
+  role: string
+}
+
 export const authApi = {
-  login: (payload: { username: string; password: string }) => http.post<ApiResponse<{ token: string; role: string }>>('/auth/login', payload),
-  me: () => http.get<ApiResponse<{ id: number; username: string; roles: string[] }>>('/auth/me')
+  login: (payload: { username: string; password: string }) =>
+    http.post<ApiResponse<LoginResult>>('/auth/login', payload),
+  register: (payload: { username: string; password: string }) =>
+    http.post<ApiResponse<{ userId: number; username: string; role: string }>>('/auth/register', payload),
+  me: () => http.get<ApiResponse<{ id: number; username: string; accountType: string; roles: string[] }>>('/auth/me')
 }
 
 export const stallApi = {
-  nearby: () => http.get('/stalls/nearby'),
-  search: (keyword: string) => http.get('/stalls/search', { params: { keyword } }),
-  detail: (id: string | number) => http.get(`/stalls/${id}`)
+  nearby: (category?: string, pageNo = 1, pageSize = 20) =>
+    http.get<ApiResponse<PageResult<any>>>('/stalls/nearby', { params: { category, pageNo, pageSize } }),
+  search: (keyword?: string, category?: string, pageNo = 1, pageSize = 20) =>
+    http.get<ApiResponse<PageResult<any>>>('/stalls/search', { params: { keyword, category, pageNo, pageSize } }),
+  detail: (id: string | number) => http.get<ApiResponse<any>>(`/stalls/${id}`),
+  products: (id: string | number) => http.get<ApiResponse<PageResult<any>>>(`/stalls/${id}/products`),
+  reviews: (id: string | number) => http.get<ApiResponse<PageResult<any>>>(`/stalls/${id}/reviews`)
+}
+
+export const orderApi = {
+  create: (payload: Record<string, any>) => http.post<ApiResponse<any>>('/orders', payload),
+  my: (pageNo = 1, pageSize = 50) => http.get<ApiResponse<PageResult<any>>>('/orders/my', { params: { pageNo, pageSize } }),
+  detail: (id: string | number) => http.get<ApiResponse<any>>(`/orders/${id}`),
+  review: (id: string | number, payload: { rating: number }) => http.post<ApiResponse<any>>(`/orders/${id}/reviews`, payload)
+}
+
+export const complaintApi = {
+  create: (payload: { vendorId?: number; description: string }) => http.post<ApiResponse<any>>('/complaints', payload),
+  my: () => http.get<ApiResponse<PageResult<any>>>('/complaints/my'),
+  detail: (id: string | number) => http.get<ApiResponse<any>>(`/complaints/${id}`)
+}
+
+export const reviewApi = {
+  my: () => http.get<ApiResponse<PageResult<any>>>('/reviews/my')
+}
+
+export const interactionApi = {
+  follow: (vendorId: number) => http.post<ApiResponse<any>>(`/follows/vendors/${vendorId}`),
+  unfollow: (vendorId: number) => http.delete<ApiResponse<any>>(`/follows/vendors/${vendorId}`),
+  follows: () => http.get<ApiResponse<PageResult<any>>>('/follows'),
+  favorite: (payload: { bizType?: string; bizId: number; bizName?: string }) => http.post<ApiResponse<any>>('/favorites', payload),
+  unfavorite: (id: number) => http.delete<ApiResponse<any>>(`/favorites/${id}`),
+  favorites: () => http.get<ApiResponse<PageResult<any>>>('/favorites'),
+  subscribe: (payload: { vendorId: number; vendorName?: string }) => http.post<ApiResponse<any>>('/subscriptions', payload),
+  subscriptions: () => http.get<ApiResponse<PageResult<any>>>('/subscriptions')
+}
+
+export const contentApi = {
+  policies: () => http.get<ApiResponse<PageResult<any>>>('/policies'),
+  notices: () => http.get<ApiResponse<PageResult<any>>>('/notices')
+}
+
+export const vendorApi = {
+  me: () => http.get<ApiResponse<any>>('/vendor/me'),
+  apply: (payload: { vendorName?: string; story?: string }) => http.post<ApiResponse<any>>('/vendor/applications', payload),
+  updateMe: (payload: { vendorName?: string; story?: string }) => http.put<ApiResponse<any>>('/vendor/me', payload),
+  orders: () => http.get<ApiResponse<PageResult<any>>>('/vendor/orders'),
+  updateOrderStatus: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/vendor/orders/${id}/status`, { status }),
+  addProduct: (payload: { productName: string; price?: number; categoryId?: number }) => http.post<ApiResponse<any>>('/vendor/products', payload),
+  products: () => http.get<ApiResponse<PageResult<any>>>('/vendor/products'),
+  reservations: () => http.get<ApiResponse<PageResult<any>>>('/vendor/stall-reservations'),
+  reserve: (payload: { stallId: number }) => http.post<ApiResponse<any>>('/vendor/stall-reservations', payload)
+}
+
+export const adminApi = {
+  overview: () => http.get<ApiResponse<Record<string, number>>>('/admin/dashboard/overview'),
+  list: (module: string) => http.get<ApiResponse<PageResult<any>>>(`/admin/${module}`),
+  vendorApplications: () => http.get<ApiResponse<PageResult<any>>>('/admin/vendors/applications'),
+  auditVendor: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/vendors/applications/${id}/audit`, { status }),
+  auditReservation: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/stall-reservations/${id}/audit`, { status }),
+  assignComplaint: (id: string | number) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/assign`, {}),
+  processComplaint: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/process`, { status }),
+  createPolicy: (payload: { title: string; content?: string }) => http.post<ApiResponse<any>>('/admin/policies', payload),
+  publishPolicy: (id: string | number) => http.post<ApiResponse<any>>(`/admin/policies/${id}/publish`)
 }
 
 export interface AgentOrderItem {

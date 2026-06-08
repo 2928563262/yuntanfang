@@ -13,7 +13,7 @@
     </section>
 
     <section class="section list-stack">
-      <RouterLink v-for="order in filteredOrders" :key="order.id" class="list-card" :to="`/orders/${order.id}`">
+      <article v-for="order in filteredOrders" :key="order.id" class="list-card">
         <div class="list-card-header">
           <div>
             <h3>{{ order.stall }}</h3>
@@ -24,10 +24,9 @@
         <div class="meta-row">
           <span>订单号 {{ order.id }}</span>
           <span>金额 ¥{{ order.amount }}</span>
-          <span>{{ order.items.map((item) => `${item.name} x${item.quantity}`).join('、') }}</span>
         </div>
-      </RouterLink>
-      <article v-if="filteredOrders.length === 0" class="list-card">
+      </article>
+      <article v-if="!loading && filteredOrders.length === 0" class="list-card">
         <h3>暂无订单</h3>
         <p>去附近摊位预约一单，订单会出现在这里。</p>
       </article>
@@ -36,19 +35,50 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useUserDataStore } from '../stores/userData'
+import { computed, onMounted, ref } from 'vue'
+import { orderApi } from '@yuntanfang/api'
 
-const userData = useUserDataStore()
-const tabs = ['全部', '待支付', '待取餐', '已完成', '售后']
+const tabs = ['全部', '待接单', '备货中', '待取餐', '已完成']
 const activeTab = ref('全部')
+const orders = ref<any[]>([])
+const loading = ref(false)
+
+const statusMap: Record<string, string> = {
+  created: '待接单',
+  accepted: '备货中',
+  preparing: '备货中',
+  ready: '待取餐',
+  completed: '已完成',
+  reviewed: '已完成',
+  cancelled: '已取消'
+}
+const zh = (s: string) => statusMap[s] ?? s
+
+async function load() {
+  loading.value = true
+  try {
+    const res = await orderApi.my(1, 50)
+    orders.value = res.data.data?.records ?? []
+  } catch {
+    orders.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
+
 const filteredOrders = computed(() => {
+  const list = orders.value.map((o) => ({
+    id: o.id,
+    stall: o.stallName ?? `摊位#${o.stallId ?? '-'}`,
+    time: o.pickupTime ?? '-',
+    status: zh(o.orderStatus),
+    amount: o.totalAmount != null ? Number(o.totalAmount).toFixed(2) : '0.00'
+  }))
   if (activeTab.value === '全部') {
-    return userData.orders.value
+    return list
   }
-  if (activeTab.value === '售后') {
-    return userData.orders.value.filter((order) => ['已取消', '退款中'].includes(order.status))
-  }
-  return userData.orders.value.filter((order) => order.status === activeTab.value)
+  return list.filter((o) => o.status === activeTab.value)
 })
 </script>
