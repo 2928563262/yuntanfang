@@ -17,6 +17,8 @@ public class Vendor {
     private String vendorName;
     private String story;
     private String status;
+    private String auditOpinion;
+    private String rejectReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

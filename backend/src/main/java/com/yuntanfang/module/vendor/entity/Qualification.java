@@ -17,6 +17,8 @@ public class Qualification {
     private String qualificationType;
     private String mediaUrl;
     private String status;
+    private String auditOpinion;
+    private String rejectReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

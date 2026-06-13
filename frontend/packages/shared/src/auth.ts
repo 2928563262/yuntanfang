@@ -22,6 +22,7 @@ const AUTH_KEY = 'ytf_mock_session'
 export const mockAccounts: MockAccount[] = [
   { username: 'test1', password: '123456', role: 'consumer', label: '普通用户', app: 'h5', entry: '/' },
   { username: 'test2', password: '123456', role: 'vendor', label: '商家', app: 'h5', entry: '/vendor/dashboard' },
+  { username: 'test4', password: '123456', role: 'vendor', label: '待审核摊主', app: 'h5', entry: '/vendor/dashboard' },
   { username: 'test3', password: '123456', role: 'admin', label: '管理后台', app: 'admin', entry: '/dashboard' }
 ]
 

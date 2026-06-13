@@ -17,6 +17,31 @@
       </div>
     </section>
 
+    <section class="section">
+      <div class="card">
+        <h2>入驻与认证状态</h2>
+        <div class="status-grid">
+          <div class="status-item">
+            <span>入驻审核</span>
+            <span class="status-tag" :class="statusClass(vendorStatus)">{{ statusLabel(vendorStatus) }}</span>
+          </div>
+          <div class="status-item">
+            <span>资质材料</span>
+            <small>通过 {{ qualApproved }} / 待审 {{ qualPending }}</small>
+          </div>
+          <div class="status-item">
+            <span>公益认证</span>
+            <small>通过 {{ identityApproved }} / 待审 {{ identityPending }}</small>
+          </div>
+          <div class="status-item">
+            <span>摊位预约</span>
+            <small>已释放 {{ reservationApproved }} / 待审 {{ reservationPending }}</small>
+          </div>
+        </div>
+        <p class="hint">四项审核全部通过后，摊位即在用户端首页展示、可搜索、可预约。</p>
+      </div>
+    </section>
+
     <section class="section action-grid">
       <RouterLink v-for="item in vendorMenu" :key="item.path" class="list-card" :to="item.path">
         <h3>{{ item.title }}</h3>
@@ -31,8 +56,26 @@ import { computed, onMounted, ref } from 'vue'
 import { vendorApi } from '@yuntanfang/api'
 
 const vendorName = ref('')
+const vendorStatus = ref('pending')
 const orders = ref<any[]>([])
 const products = ref<any[]>([])
+const qualifications = ref<any[]>([])
+const identities = ref<any[]>([])
+const reservations = ref<any[]>([])
+
+const qualApproved = computed(() => qualifications.value.filter((q) => q.status === 'approved').length)
+const qualPending = computed(() => qualifications.value.filter((q) => q.status === 'pending').length)
+const identityApproved = computed(() => identities.value.filter((i) => i.status === 'approved').length)
+const identityPending = computed(() => identities.value.filter((i) => i.status === 'pending').length)
+const reservationApproved = computed(() => reservations.value.filter((r) => r.status === 'approved').length)
+const reservationPending = computed(() => reservations.value.filter((r) => r.status === 'pending').length)
+
+function statusLabel(status: string) {
+  return status === 'approved' ? '已通过' : status === 'rejected' ? '已驳回' : '待审核'
+}
+function statusClass(status: string) {
+  return status === 'approved' ? 'tag-success' : status === 'rejected' ? 'tag-danger' : 'tag-pending'
+}
 
 const vendorTasks = computed(() => [
   { title: '全部订单', value: orders.value.length },
@@ -54,6 +97,7 @@ onMounted(async () => {
   try {
     const me = await vendorApi.me()
     vendorName.value = me.data.data?.vendorName ?? ''
+    vendorStatus.value = me.data.data?.status ?? 'pending'
   } catch {
     vendorName.value = ''
   }
@@ -69,5 +113,45 @@ onMounted(async () => {
   } catch {
     products.value = []
   }
+  try {
+    const q = await vendorApi.qualifications()
+    qualifications.value = q.data.data?.records ?? []
+  } catch {
+    qualifications.value = []
+  }
+  try {
+    const s = await vendorApi.specialIdentities()
+    identities.value = s.data.data?.records ?? []
+  } catch {
+    identities.value = []
+  }
+  try {
+    const r = await vendorApi.reservations()
+    reservations.value = r.data.data?.records ?? []
+  } catch {
+    reservations.value = []
+  }
 })
 </script>
+
+<style scoped>
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+}
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f7f8fa;
+  border-radius: 10px;
+}
+.status-item small { color: #888; }
+.status-tag.tag-success { background: #e7f7ec; color: #18a058; }
+.status-tag.tag-danger { background: #fdeceb; color: #d03050; }
+.status-tag.tag-pending { background: #fff4e5; color: #f0883a; }
+.hint { color: #888; font-size: 13px; margin-top: 8px; }
+</style>

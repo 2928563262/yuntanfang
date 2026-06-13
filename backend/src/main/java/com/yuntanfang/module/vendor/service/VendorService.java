@@ -11,6 +11,8 @@ import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.order.mapper.OrderStatusLogMapper;
 import com.yuntanfang.module.product.entity.Product;
 import com.yuntanfang.module.product.mapper.ProductMapper;
+import com.yuntanfang.module.stall.entity.Stall;
+import com.yuntanfang.module.stall.mapper.StallMapper;
 import com.yuntanfang.module.vendor.entity.Qualification;
 import com.yuntanfang.module.vendor.entity.SpecialIdentity;
 import com.yuntanfang.module.vendor.entity.StallCheckin;
@@ -24,6 +26,7 @@ import com.yuntanfang.module.vendor.mapper.StallReservationMapper;
 import com.yuntanfang.module.vendor.mapper.StallScheduleMapper;
 import com.yuntanfang.module.vendor.mapper.VendorMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,10 +50,11 @@ public class VendorService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
+    private final StallMapper stallMapper;
 
     private Vendor requireVendor(Long userId) {
         if (userId == null) {
-            throw new BusinessException("未登录");
+            throw new AuthenticationCredentialsNotFoundException("未登录");
         }
         Vendor vendor = vendorMapper.selectOne(new LambdaQueryWrapper<Vendor>().eq(Vendor::getUserId, userId));
         if (vendor == null) {
@@ -66,7 +70,7 @@ public class VendorService {
     @Transactional
     public Vendor apply(Long userId, String vendorName, String story) {
         if (userId == null) {
-            throw new BusinessException("未登录");
+            throw new AuthenticationCredentialsNotFoundException("未登录");
         }
         Vendor existing = vendorMapper.selectOne(new LambdaQueryWrapper<Vendor>().eq(Vendor::getUserId, userId));
         if (existing != null) {
@@ -117,6 +121,20 @@ public class VendorService {
         return identity;
     }
 
+    public PageResult<Qualification> qualifications(Long userId) {
+        Vendor vendor = requireVendor(userId);
+        List<Qualification> list = qualificationMapper.selectList(new LambdaQueryWrapper<Qualification>()
+                .eq(Qualification::getVendorId, vendor.getId()).orderByDesc(Qualification::getId));
+        return PageResult.of(list);
+    }
+
+    public PageResult<SpecialIdentity> specialIdentities(Long userId) {
+        Vendor vendor = requireVendor(userId);
+        List<SpecialIdentity> list = specialIdentityMapper.selectList(new LambdaQueryWrapper<SpecialIdentity>()
+                .eq(SpecialIdentity::getVendorId, vendor.getId()).orderByDesc(SpecialIdentity::getId));
+        return PageResult.of(list);
+    }
+
     public PageResult<StallReservation> reservations(Long userId) {
         Vendor vendor = requireVendor(userId);
         List<StallReservation> list = stallReservationMapper.selectList(new LambdaQueryWrapper<StallReservation>()
@@ -127,6 +145,22 @@ public class VendorService {
     @Transactional
     public StallReservation reserve(Long userId, Long stallId) {
         Vendor vendor = requireVendor(userId);
+        if (stallId == null) {
+            throw new BusinessException("请选择要预约的摊位");
+        }
+        Stall stall = stallMapper.selectById(stallId);
+        if (stall == null) {
+            throw new BusinessException("摊位不存在");
+        }
+        if ("approved".equals(stall.getAuditStatus()) || stall.getVendorId() != null) {
+            throw new BusinessException("该摊位已被占用或已释放，无法预约");
+        }
+        long pending = stallReservationMapper.selectCount(new LambdaQueryWrapper<StallReservation>()
+                .eq(StallReservation::getStallId, stallId)
+                .eq(StallReservation::getStatus, "pending"));
+        if (pending > 0) {
+            throw new BusinessException("该摊位已有待审批的预约");
+        }
         StallReservation reservation = new StallReservation();
         reservation.setVendorId(vendor.getId());
         reservation.setStallId(stallId);

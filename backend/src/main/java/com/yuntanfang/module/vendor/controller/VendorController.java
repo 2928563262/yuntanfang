@@ -66,11 +66,23 @@ public class VendorController {
         return ApiResponse.ok(vendorService.updateMe(uid(authorization), str(body, "vendorName"), str(body, "story")));
     }
 
+    @GetMapping("/qualifications")
+    public ApiResponse<PageResult<Qualification>> qualifications(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(vendorService.qualifications(uid(authorization)));
+    }
+
     @PostMapping("/qualifications")
     public ApiResponse<Qualification> qualification(
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         return ApiResponse.ok(vendorService.addQualification(uid(authorization), str(body, "qualificationType"), str(body, "mediaUrl")));
+    }
+
+    @GetMapping("/special-identities")
+    public ApiResponse<PageResult<SpecialIdentity>> specialIdentities(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(vendorService.specialIdentities(uid(authorization)));
     }
 
     @PostMapping("/special-identities")

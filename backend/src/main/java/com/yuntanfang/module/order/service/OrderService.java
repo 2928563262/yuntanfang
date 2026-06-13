@@ -12,6 +12,8 @@ import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.order.mapper.OrderStatusLogMapper;
 import com.yuntanfang.module.review.entity.Review;
 import com.yuntanfang.module.review.mapper.ReviewMapper;
+import com.yuntanfang.module.stall.entity.Stall;
+import com.yuntanfang.module.stall.mapper.StallMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ public class OrderService {
     private final OrderItemMapper orderItemMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final ReviewMapper reviewMapper;
+    private final StallMapper stallMapper;
 
     @Transactional
     public Order create(Long userId, Long vendorId, Long stallId, String stallName,
@@ -37,11 +40,16 @@ public class OrderService {
         if (userId == null) {
             throw new BusinessException("未登录");
         }
+        // 只能对已释放(审核通过)的摊位下单；并以摊位真实数据为准，避免前端伪造 vendorId/stallName
+        Stall stall = stallId == null ? null : stallMapper.selectById(stallId);
+        if (stall == null || !"approved".equals(stall.getAuditStatus())) {
+            throw new BusinessException("摊位不可预约");
+        }
         Order order = new Order();
         order.setUserId(userId);
-        order.setVendorId(vendorId);
-        order.setStallId(stallId);
-        order.setStallName(stallName);
+        order.setVendorId(stall.getVendorId());
+        order.setStallId(stall.getId());
+        order.setStallName(stall.getStallName());
         order.setPickupTime(pickupTime);
         order.setContactPhone(contactPhone);
         order.setRemark(remark);
