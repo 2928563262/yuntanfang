@@ -35,7 +35,9 @@ public class AgentAssistantService {
             stall(2, "乡野新农人鲜铺", "陈小禾", "农家特产", "今日推荐", "1.2km", "4.7", "市民广场南侧临时摊区",
                     List.of("当季蔬果礼盒", "农家土鸡蛋(10枚)", "手工辣酱")),
             stall(3, "非遗手作摊", "周老师", "非遗好物", "即将出摊", "2.0km", "4.9", "老街口文创夜市",
-                    List.of("生肖糖画", "定制糖牌", "糖画体验券"))
+                    List.of("生肖糖画", "定制糖牌", "糖画体验券")),
+            stall(4, "老城豆花摊", "老城豆花摊", "传统小吃", "营业中", "900m", "4.6", "老城十字街临时摊区",
+                    List.of("老城手作豆花", "咸口豆腐脑", "桂花冰豆浆", "红糖小豆花"))
     );
 
     private final RestClient restClient;
@@ -118,8 +120,8 @@ public class AgentAssistantService {
                 3. submit_review: 参数 orderId, rating, content。必须有订单指代（orderId 或 上一单/最近一单）且必须有明确评分信号（数字星级/好评/中评/差评/一般等）。
                 4. submit_complaint: 参数 target, type, description。必须有投诉对象 target，且必须有 type 或 description。
                 5. system_help: 参数 topic。
-                已知摊位：烟火小摊、乡野新农人鲜铺、守艺糖画铺。
-                已知商品：招牌烤串(10串)、现炸薯条、鲜榨果汁、当季蔬果礼盒、农家土鸡蛋(10枚)、手工辣酱、生肖糖画、定制糖牌、糖画体验券。
+                已知摊位：烟火小摊、乡野新农人鲜铺、非遗手作摊、老城豆花摊。
+                已知商品：招牌烤串(10串)、现炸薯条、鲜榨果汁、当季蔬果礼盒、农家土鸡蛋(10枚)、手工辣酱、生肖糖画、定制糖牌、糖画体验券、老城手作豆花、咸口豆腐脑、桂花冰豆浆、红糖小豆花。
                 若用户只是问怎么用、入口在哪、能做什么，使用 system_help。
                 """;
     }
@@ -240,7 +242,7 @@ public class AgentAssistantService {
         card.put("pickupTime", pickupTime);
         card.put("price", price);
         card.put("totalAmount", amount);
-        card.put("status", "待支付");
+        card.put("status", "待接单");
         card.put("orderPayload", orderPayload);
         return result(
                 "已生成预约单草稿：" + stallName + "，" + product.getProductName() + " x" + quantity + "，" + pickupTime + " 取。",
@@ -285,7 +287,7 @@ public class AgentAssistantService {
         return result(
                 "投诉工单已整理：" + target + "，类型为" + type + "。",
                 "submit_complaint",
-                new AgentAction("submit_complaint", "确认提交投诉", "/complaints", card),
+                new AgentAction("submit_complaint", "确认提交投诉", "/complaints/create", card),
                 List.of(card),
                 raw
         );
@@ -324,7 +326,7 @@ public class AgentAssistantService {
                 action,
                 cards,
                 processSteps(intent, "completed", cards.size()),
-                List.of("找地方特色摊位", "预约一份招牌烤串", "给上一单好评", "投诉烟火小摊卫生问题"),
+                List.of("找地方特色摊位", "预约一份老城手作豆花", "给上一单好评", "投诉烟火小摊卫生问题"),
                 "deepseek",
                 raw == null ? "" : raw
         );
@@ -343,7 +345,7 @@ public class AgentAssistantService {
                     !isValidOrderProduct(parameters, message),
                     "你想预约哪个商品？目前可预约招牌烤串、现炸薯条、鲜榨果汁、农家土鸡蛋、生肖糖画等。请先告诉我具体商品，再帮你生成订单。",
                     "create_order",
-                    List.of("预约招牌烤串", "预约农家土鸡蛋", "预约生肖糖画")
+                    List.of("预约招牌烤串", "预约农家土鸡蛋", "预约老城手作豆花")
             );
             case "submit_review" -> insufficient(
                     !hasOrderReference(parameters, message) || !hasRatingSignal(parameters, message),
@@ -356,7 +358,7 @@ public class AgentAssistantService {
                             || (safe(parameters.get("type")).isBlank() && safe(parameters.get("description")).isBlank()),
                     complaintClarification(parameters),
                     "submit_complaint",
-                    List.of("投诉烟火小摊卫生问题", "投诉守艺糖画铺占道经营", "投诉订单 1002 商品质量")
+                    List.of("投诉烟火小摊卫生问题", "投诉非遗手作摊占道经营", "投诉订单 1002 商品质量")
             );
             default -> null;
         };
@@ -492,6 +494,10 @@ public class AgentAssistantService {
             case "生肖糖画" -> containsAny(text, "糖画");
             case "定制糖牌" -> containsAny(text, "糖牌");
             case "糖画体验券" -> containsAny(text, "糖画体验", "体验券", "体验");
+            case "老城手作豆花" -> containsAny(text, "豆花", "手作豆花");
+            case "咸口豆腐脑" -> containsAny(text, "豆腐脑", "咸口");
+            case "桂花冰豆浆" -> containsAny(text, "豆浆", "桂花");
+            case "红糖小豆花" -> containsAny(text, "红糖", "小豆花");
             default -> false;
         };
     }
@@ -508,6 +514,10 @@ public class AgentAssistantService {
                     case "生肖糖画" -> containsAny(message, "糖画");
                     case "定制糖牌" -> containsAny(message, "糖牌");
                     case "糖画体验券" -> containsAny(message, "糖画体验", "体验券", "体验");
+                    case "老城手作豆花" -> containsAny(message, "豆花", "手作豆花");
+                    case "咸口豆腐脑" -> containsAny(message, "豆腐脑", "咸口");
+                    case "桂花冰豆浆" -> containsAny(message, "豆浆", "桂花");
+                    case "红糖小豆花" -> containsAny(message, "红糖", "小豆花");
                     default -> false;
                 });
     }
@@ -608,6 +618,10 @@ public class AgentAssistantService {
             case "生肖糖画" -> containsAny(query, "糖画");
             case "定制糖牌" -> containsAny(query, "糖牌");
             case "糖画体验券" -> containsAny(query, "糖画体验", "体验券", "体验");
+            case "老城手作豆花" -> containsAny(query, "豆花", "手作豆花");
+            case "咸口豆腐脑" -> containsAny(query, "豆腐脑", "咸口");
+            case "桂花冰豆浆" -> containsAny(query, "豆浆", "桂花");
+            case "红糖小豆花" -> containsAny(query, "红糖", "小豆花");
             default -> false;
         };
     }

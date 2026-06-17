@@ -12,7 +12,7 @@
       <p>{{ order.stallName }} · 取货时间 {{ order.pickupTime }}</p>
       <div class="hero-actions">
         <RouterLink v-if="isCompleted" class="primary-pill" :to="`/reviews/create/${order.id}`">发布评价</RouterLink>
-        <RouterLink class="ghost-pill" :to="{ path: '/complaints/create', query: { orderId: order.id, vendorId: order.vendorId, stallName: order.stallName } }">提交投诉</RouterLink>
+        <RouterLink v-if="order.id" class="ghost-pill" :to="{ path: '/complaints/create', query: { orderId: order.id, vendorId: order.vendorId, stallName: order.stallName } }">提交投诉</RouterLink>
         <button class="ghost-pill" type="button">联系摊主</button>
       </div>
     </section>
@@ -56,6 +56,7 @@
           <div v-for="log in statusLogs" :key="log.id" class="timeline-item">
             <span></span>
             <strong>{{ statusText(log.orderStatus) }}</strong>
+            <small>{{ log.createdAt || '-' }}</small>
           </div>
           <p v-if="statusLogs.length === 0" class="muted">暂无状态记录</p>
         </div>

@@ -41,6 +41,7 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button size="small" @click="openDetail(row)">详情</el-button>
             <el-button
               size="small"
               type="primary"
@@ -58,6 +59,42 @@
         </el-table-column>
       </el-table>
       <el-empty v-if="!loading && rows.length === 0" description="暂无待处理记录" />
+    </el-card>
+
+    <el-card v-if="selectedRow" shadow="never" class="audit-detail table-card">
+      <template #header>
+        <div class="table-head">
+          <strong>{{ detailTitle }}</strong>
+          <el-button size="small" @click="closeDetail">关闭</el-button>
+        </div>
+      </template>
+      <div>
+        <el-alert
+          title="审核顺序：入驻审核 → 资质审核 → 特殊身份/公益标签审核 → 摊位预约审批。摊位预约审批通过后才会释放到用户端。"
+          type="info"
+          :closable="false"
+          show-icon
+        />
+        <div class="detail-grid">
+          <div v-for="item in detailFields(selectedRow)" :key="item.label" class="detail-row">
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value || '-' }}</strong>
+          </div>
+        </div>
+        <div class="drawer-actions">
+          <el-button
+            type="primary"
+            :disabled="selectedRow.status === 'approved'"
+            @click="approveSelected"
+          >通过</el-button>
+          <el-button
+            type="danger"
+            plain
+            :disabled="selectedRow.status === 'rejected'"
+            @click="rejectSelected"
+          >驳回</el-button>
+        </div>
+      </div>
     </el-card>
 
     <!-- 其余模块：占位（mock 列表，未接入后端） -->
@@ -204,7 +241,9 @@ const live = computed<LiveConfig | null>(() => liveConfigs[route.path] ?? null)
 const rows = ref<any[]>([])
 const overview = ref<Record<string, number>>({})
 const loading = ref(false)
+const selectedRow = ref<any | null>(null)
 const pendingCount = computed(() => rows.value.filter((r) => r.status === 'pending').length)
+const detailTitle = computed(() => `${config.value.title}详情`)
 const displayMetrics = computed(() => {
   if (route.path !== '/dashboard') {
     return config.value.metrics
@@ -228,6 +267,44 @@ function statusMeta(status: string) {
     default:
       return { type: 'warning' as const, label: '待审核' }
   }
+}
+
+function openDetail(row: any) {
+  selectedRow.value = row
+}
+
+function closeDetail() {
+  selectedRow.value = null
+}
+
+function approveSelected() {
+  if (selectedRow.value) {
+    approve(selectedRow.value)
+  }
+}
+
+function rejectSelected() {
+  if (selectedRow.value) {
+    reject(selectedRow.value)
+  }
+}
+
+function detailFields(row: any) {
+  return [
+    { label: '编号', value: row.id },
+    { label: '摊主/商家', value: row.vendorName },
+    { label: '状态', value: statusMeta(row.status).label },
+    { label: '摊主故事', value: row.story },
+    { label: '资质类型', value: row.qualificationType },
+    { label: '材料地址', value: row.mediaUrl },
+    { label: '身份类型', value: row.identityType },
+    { label: '公益标签ID', value: row.publicWelfareTagId },
+    { label: '摊位', value: row.stallName },
+    { label: '摊位ID', value: row.stallId },
+    { label: '审核意见', value: row.auditOpinion },
+    { label: '驳回原因', value: row.rejectReason },
+    { label: '更新时间', value: row.updatedAt }
+  ].filter((item) => item.value !== undefined && item.value !== null && item.value !== '')
 }
 
 async function reload() {
@@ -264,6 +341,7 @@ async function approve(row: any) {
   try {
     await cfg.audit(row.id, 'approved')
     ElMessage.success('已通过')
+    selectedRow.value = null
     reload()
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message ?? '操作失败')
@@ -281,6 +359,7 @@ async function reject(row: any) {
     })
     await cfg.audit(row.id, 'rejected', value)
     ElMessage.success('已驳回')
+    selectedRow.value = null
     reload()
   } catch (err: any) {
     if (err === 'cancel' || err === 'close') return
@@ -312,5 +391,32 @@ const flows = [
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.audit-detail {
+  display: grid;
+  gap: 18px;
+}
+.detail-grid {
+  display: grid;
+  gap: 10px;
+}
+.detail-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 14px;
+}
+.detail-row span {
+  color: #8a5a44;
+  font-weight: 700;
+}
+.detail-row strong {
+  color: #273238;
+  font-weight: 600;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.drawer-actions {
+  display: flex;
+  gap: 10px;
 }
 </style>

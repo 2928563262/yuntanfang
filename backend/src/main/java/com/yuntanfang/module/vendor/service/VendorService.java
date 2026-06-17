@@ -288,6 +288,47 @@ public class VendorService {
     }
 
     @Transactional
+    public Product updateProduct(Long userId, Long productId, String name, Object price, String description,
+                                 String status, Long stallId, Long categoryId) {
+        Vendor vendor = requireVendor(userId);
+        Product product = productMapper.selectById(productId);
+        if (product == null || !vendor.getId().equals(product.getVendorId())) {
+            throw new BusinessException("商品不存在或无权操作");
+        }
+        if (stallId != null && !stallId.equals(product.getStallId())) {
+            Stall stall = stallMapper.selectById(stallId);
+            if (stall == null || !vendor.getId().equals(stall.getVendorId()) || !"approved".equals(stall.getAuditStatus())) {
+                throw new BusinessException("只能绑定已释放且属于自己的摊位");
+            }
+            product.setStallId(stallId);
+        }
+        if (name != null && !name.isBlank()) {
+            product.setProductName(name);
+        }
+        if (price != null) {
+            BigDecimal nextPrice = new BigDecimal(String.valueOf(price));
+            if (nextPrice.compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessException("商品价格不能为负数");
+            }
+            product.setPrice(nextPrice);
+        }
+        if (description != null) {
+            product.setDescription(description);
+        }
+        if (categoryId != null) {
+            product.setCategoryId(categoryId);
+        }
+        if (status != null) {
+            if (!Set.of("on_sale", "off_sale", "draft").contains(status)) {
+                throw new BusinessException("商品状态不支持");
+            }
+            product.setStatus(status);
+        }
+        productMapper.updateById(product);
+        return product;
+    }
+
+    @Transactional
     public Order updateOrderStatus(Long userId, Long orderId, String status) {
         Vendor vendor = requireVendor(userId);
         Order order = orderMapper.selectById(orderId);
@@ -305,6 +346,21 @@ public class VendorService {
         log.setOrderStatus(order.getOrderStatus());
         orderStatusLogMapper.insert(log);
         return order;
+    }
+
+    public Map<String, Object> orderDetail(Long userId, Long orderId) {
+        Vendor vendor = requireVendor(userId);
+        Order order = orderMapper.selectById(orderId);
+        if (order == null || !vendor.getId().equals(order.getVendorId())) {
+            throw new BusinessException("订单不存在或无权查看");
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("order", order);
+        result.put("items", orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId())));
+        result.put("statusLogs", orderStatusLogMapper.selectList(
+                new LambdaQueryWrapper<OrderStatusLog>().eq(OrderStatusLog::getOrderId, order.getId()).orderByAsc(OrderStatusLog::getId)));
+        return result;
     }
 
     private void assertOrderTransition(String current, String next) {

@@ -126,6 +126,15 @@ public class VendorController {
         return ApiResponse.ok(vendorService.addProduct(uid(authorization), lng(body, "stallId"), str(body, "productName"), body.get("price"), lng(body, "categoryId")));
     }
 
+    @PutMapping("/products/{id}")
+    public ApiResponse<Product> updateProduct(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(vendorService.updateProduct(uid(authorization), id, str(body, "productName"), body.get("price"),
+                str(body, "description"), str(body, "status"), lng(body, "stallId"), lng(body, "categoryId")));
+    }
+
     @GetMapping("/products")
     public ApiResponse<com.yuntanfang.common.PageResult<Product>> products(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
@@ -136,6 +145,13 @@ public class VendorController {
     public ApiResponse<PageResult<Map<String, Object>>> orders(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         return ApiResponse.ok(vendorService.ordersWithItems(uid(authorization)));
+    }
+
+    @GetMapping("/orders/{id}")
+    public ApiResponse<Map<String, Object>> orderDetail(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(vendorService.orderDetail(uid(authorization), id));
     }
 
     @PutMapping("/orders/{id}/status")

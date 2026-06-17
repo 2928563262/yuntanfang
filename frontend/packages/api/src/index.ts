@@ -108,8 +108,11 @@ export const vendorApi = {
   apply: (payload: { vendorName?: string; story?: string }) => http.post<ApiResponse<any>>('/vendor/applications', payload),
   updateMe: (payload: { vendorName?: string; story?: string }) => http.put<ApiResponse<any>>('/vendor/me', payload),
   orders: () => http.get<ApiResponse<PageResult<any>>>('/vendor/orders'),
+  orderDetail: (id: string | number) => http.get<ApiResponse<any>>(`/vendor/orders/${id}`),
   updateOrderStatus: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/vendor/orders/${id}/status`, { status }),
   addProduct: (payload: { productName: string; price?: number; categoryId?: number; stallId?: number }) => http.post<ApiResponse<any>>('/vendor/products', payload),
+  updateProduct: (id: string | number, payload: { productName?: string; price?: number; description?: string; status?: string; categoryId?: number; stallId?: number }) =>
+    http.put<ApiResponse<any>>(`/vendor/products/${id}`, payload),
   products: () => http.get<ApiResponse<PageResult<any>>>('/vendor/products'),
   qualifications: () => http.get<ApiResponse<PageResult<any>>>('/vendor/qualifications'),
   addQualification: (payload: { qualificationType: string; mediaUrl?: string }) => http.post<ApiResponse<any>>('/vendor/qualifications', payload),

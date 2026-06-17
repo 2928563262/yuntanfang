@@ -69,7 +69,7 @@
     "pickupTime": "今天 18:30",
     "price": "29.90",
     "totalAmount": "59.80",
-    "status": "待支付",
+    "status": "待接单",
     "orderPayload": {
       "vendorId": 1,
       "stallId": 1,

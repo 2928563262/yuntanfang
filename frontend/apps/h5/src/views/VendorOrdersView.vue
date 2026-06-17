@@ -27,6 +27,7 @@
         </div>
         <p v-if="errorMap[order.id]" class="form-error">{{ errorMap[order.id] }}</p>
         <div class="action-grid">
+          <RouterLink class="ghost-pill" :to="`/vendor/orders/${order.id}`">详情</RouterLink>
           <button class="ghost-pill" type="button" :disabled="!canSet(order.orderStatus, 'accepted')" @click="setStatus(order.id, 'accepted')">接单</button>
           <button class="ghost-pill" type="button" :disabled="!canSet(order.orderStatus, 'cancelled')" @click="setStatus(order.id, 'cancelled')">拒单</button>
           <button class="ghost-pill" type="button" :disabled="!canSet(order.orderStatus, 'preparing')" @click="setStatus(order.id, 'preparing')">备货中</button>

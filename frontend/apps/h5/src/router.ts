@@ -20,6 +20,7 @@ import UserUtilityView from './views/UserUtilityView.vue'
 import VendorApplyView from './views/VendorApplyView.vue'
 import VendorDashboardView from './views/VendorDashboardView.vue'
 import VendorLocationRecommendationsView from './views/VendorLocationRecommendationsView.vue'
+import VendorOrderDetailView from './views/VendorOrderDetailView.vue'
 import VendorOrdersView from './views/VendorOrdersView.vue'
 import VendorProductsView from './views/VendorProductsView.vue'
 import VendorQualificationsView from './views/VendorQualificationsView.vue'
@@ -60,6 +61,7 @@ const routes = [
   { path: '/vendor/stalls', component: VendorStallsView, meta: { title: '摊位预约与出摊管理', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/products', component: VendorProductsView, meta: { title: '商品管理', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/orders', component: VendorOrdersView, meta: { title: '订单处理', module: '商家端', nav: 'vendor' } },
+  { path: '/vendor/orders/:id', component: VendorOrderDetailView, meta: { title: '商家订单详情', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/reviews', component: VendorReviewsView, meta: { title: '评价回复', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/stories', component: VendorStoriesView, meta: { title: '摊主故事', module: '商家端', nav: 'vendor' } },
   { path: '/vendor/stories/create', component: VendorStoryCreateView, meta: { title: '发布摊主故事', module: '商家端', nav: 'vendor' } },

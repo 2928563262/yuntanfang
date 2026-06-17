@@ -60,8 +60,8 @@ public class AgentOrderService {
                                         你是云摊坊智能点单助手。只处理摊位预约点单。
                                         根据用户输入抽取：摊位名、商品、数量、口味备注、取餐时间。
                                         若信息不足，先追问。若可下单，返回简短中文确认。
-                                        当前可用摊位：烟火小摊、乡野新农人鲜铺、守艺糖画铺。
-                                        当前商品：招牌汤粉、手作糍粑、冰糖绿豆沙、当季蔬果、农家土鸡蛋、手工辣酱、生肖糖画、定制糖牌、糖画体验。
+                                        当前可用摊位：烟火小摊、乡野新农人鲜铺、非遗手作摊、老城豆花摊。
+                                        当前商品：招牌烤串(10串)、现炸薯条、鲜榨果汁、当季蔬果礼盒、农家土鸡蛋(10枚)、手工辣酱、生肖糖画、定制糖牌、糖画体验券、老城手作豆花、咸口豆腐脑、桂花冰豆浆。
                                         """
                         ),
                         Map.of("role", "user", "content", request.message() == null ? "" : request.message())
@@ -98,8 +98,11 @@ public class AgentOrderService {
 
     private AgentOrderResult fallback(String input, String status) {
         String text = input == null ? "" : input;
-        String stallName = text.contains("糖画") ? "守艺糖画铺" : text.contains("鲜") || text.contains("鸡蛋") ? "乡野新农人鲜铺" : "烟火小摊";
-        String product = text.contains("糖画") ? "生肖糖画" : text.contains("鸡蛋") ? "农家土鸡蛋" : "招牌汤粉";
+        String stallName = text.contains("豆花") || text.contains("豆浆") || text.contains("豆腐脑")
+                ? "老城豆花摊"
+                : text.contains("糖画") ? "非遗手作摊" : text.contains("鲜") || text.contains("鸡蛋") ? "乡野新农人鲜铺" : "烟火小摊";
+        String product = text.contains("豆浆") ? "桂花冰豆浆" : text.contains("豆腐脑") ? "咸口豆腐脑" : text.contains("豆花") ? "老城手作豆花"
+                : text.contains("糖画") ? "生肖糖画" : text.contains("鸡蛋") ? "农家土鸡蛋(10枚)" : "招牌烤串(10串)";
         int quantity = text.contains("两") || text.contains("2") ? 2 : 1;
         String pickupTime = text.contains("18:30") ? "今天 18:30" : "今天 19:00";
         String total = String.format("%.2f", quantity * 16.0);

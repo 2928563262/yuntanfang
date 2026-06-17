@@ -56,7 +56,7 @@
 {
   "type": "submit_complaint",
   "label": "确认提交投诉",
-  "route": "/complaints",
+  "route": "/complaints/create",
   "payload": {
     "complaintId": 185733,
     "target": "烟火小摊",
@@ -69,4 +69,4 @@
 
 ## 前端行为
 
-用户确认后写入投诉 store，并跳转 `/complaints`。
+用户确认后进入 `/complaints/create`，带上投诉对象、类型和描述；确认提交后调用 `POST /api/complaints`，成功后跳转 `/complaints`。
