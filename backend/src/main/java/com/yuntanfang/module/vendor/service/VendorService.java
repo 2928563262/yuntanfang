@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -293,15 +294,39 @@ public class VendorService {
         if (order == null || !vendor.getId().equals(order.getVendorId())) {
             throw new BusinessException("订单不存在或无权操作");
         }
-        if (status != null) {
-            order.setOrderStatus(status);
+        if (status == null || status.isBlank()) {
+            throw new BusinessException("请选择订单状态");
         }
+        assertOrderTransition(order.getOrderStatus(), status);
+        order.setOrderStatus(status);
         orderMapper.updateById(order);
         OrderStatusLog log = new OrderStatusLog();
         log.setOrderId(orderId);
         log.setOrderStatus(order.getOrderStatus());
         orderStatusLogMapper.insert(log);
         return order;
+    }
+
+    private void assertOrderTransition(String current, String next) {
+        if (current == null) {
+            current = "created";
+        }
+        if (current.equals(next)) {
+            throw new BusinessException("订单已经是当前状态");
+        }
+        Map<String, Set<String>> transitions = Map.of(
+                "created", Set.of("accepted", "cancelled"),
+                "accepted", Set.of("preparing", "cancelled"),
+                "preparing", Set.of("completed"),
+                "ready", Set.of("completed"),
+                "completed", Set.of(),
+                "reviewed", Set.of(),
+                "cancelled", Set.of()
+        );
+        Set<String> allowed = transitions.getOrDefault(current, Set.of());
+        if (!allowed.contains(next)) {
+            throw new BusinessException("当前订单状态不能执行该操作");
+        }
     }
 
     public Map<String, Object> replyReview(Long userId, Long reviewId, String reply) {

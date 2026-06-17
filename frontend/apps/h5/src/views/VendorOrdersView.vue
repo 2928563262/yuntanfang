@@ -25,11 +25,12 @@
           <span>取货 {{ order.pickupTime ?? '-' }}</span>
           <span>¥{{ order.totalAmount != null ? Number(order.totalAmount).toFixed(2) : '0.00' }}</span>
         </div>
+        <p v-if="errorMap[order.id]" class="form-error">{{ errorMap[order.id] }}</p>
         <div class="action-grid">
-          <button class="ghost-pill" type="button" @click="setStatus(order.id, 'accepted')">接单</button>
-          <button class="ghost-pill" type="button" @click="setStatus(order.id, 'cancelled')">拒单</button>
-          <button class="ghost-pill" type="button" @click="setStatus(order.id, 'preparing')">备货中</button>
-          <button class="primary-pill" type="button" @click="setStatus(order.id, 'completed')">完成</button>
+          <button class="ghost-pill" type="button" :disabled="!canSet(order.orderStatus, 'accepted')" @click="setStatus(order.id, 'accepted')">接单</button>
+          <button class="ghost-pill" type="button" :disabled="!canSet(order.orderStatus, 'cancelled')" @click="setStatus(order.id, 'cancelled')">拒单</button>
+          <button class="ghost-pill" type="button" :disabled="!canSet(order.orderStatus, 'preparing')" @click="setStatus(order.id, 'preparing')">备货中</button>
+          <button class="primary-pill" type="button" :disabled="!canSet(order.orderStatus, 'completed')" @click="setStatus(order.id, 'completed')">完成</button>
         </div>
       </article>
       <article v-if="!loading && orders.length === 0" class="list-card">
@@ -46,6 +47,7 @@ import { vendorApi } from '@yuntanfang/api'
 
 const orders = ref<any[]>([])
 const loading = ref(false)
+const errorMap = ref<Record<number, string>>({})
 
 const statusMap: Record<string, string> = {
   created: '待接单',
@@ -71,12 +73,26 @@ async function load() {
 }
 
 async function setStatus(id: number, status: string) {
+  errorMap.value[id] = ''
   try {
     await vendorApi.updateOrderStatus(id, status)
     await load()
-  } catch {
-    // 忽略，保持当前列表
+  } catch (err: any) {
+    errorMap.value[id] = err?.response?.data?.message ?? '状态更新失败'
   }
+}
+
+function canSet(current: string, next: string) {
+  const transitions: Record<string, string[]> = {
+    created: ['accepted', 'cancelled'],
+    accepted: ['preparing', 'cancelled'],
+    preparing: ['completed'],
+    ready: ['completed'],
+    completed: [],
+    reviewed: [],
+    cancelled: []
+  }
+  return (transitions[current] ?? []).includes(next)
 }
 
 function normalizeItems(items: unknown) {
