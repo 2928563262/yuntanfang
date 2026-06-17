@@ -14,6 +14,9 @@
           <label>投诉对象</label>
           <select v-model="targetId">
             <option v-for="stall in stalls" :key="stall.id" :value="stall.vendorId">{{ stall.stallName }}</option>
+            <option v-if="prefillVendorId && !stalls.some((stall) => Number(stall.vendorId) === Number(prefillVendorId))" :value="prefillVendorId">
+              {{ prefillStallName || `商家 #${prefillVendorId}` }}
+            </option>
           </select>
         </div>
         <div class="field-card">
@@ -38,6 +41,10 @@
       <aside class="card">
         <h2>处理规则</h2>
         <div class="list-stack">
+          <div v-if="orderId" class="list-card">
+            <h3>关联订单</h3>
+            <p>订单号 {{ orderId }} · {{ prefillStallName || '订单摊位' }}</p>
+          </div>
           <div class="list-card">
             <h3>24 小时响应</h3>
             <p>投诉超时未处理将触发后台告警。</p>
@@ -54,24 +61,33 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { complaintApi, stallApi } from '@yuntanfang/api'
 
 const router = useRouter()
+const route = useRoute()
 const stalls = ref<any[]>([])
 const targetId = ref<number | null>(null)
 const type = ref('卫生问题')
 const description = ref('')
 const error = ref('')
 const submitting = ref(false)
+const orderId = ref(String(route.query.orderId ?? ''))
+const prefillVendorId = Number(route.query.vendorId ?? '') || null
+const prefillStallName = String(route.query.stallName ?? '')
 
 onMounted(async () => {
   try {
     const res = await stallApi.nearby()
     stalls.value = res.data.data?.records ?? []
-    targetId.value = stalls.value.find((s) => s.vendorId)?.vendorId ?? null
+    targetId.value = prefillVendorId ?? stalls.value.find((s) => s.vendorId)?.vendorId ?? null
+    if (orderId.value && !description.value) {
+      description.value = `订单号 ${orderId.value}：`
+    }
   } catch {
     stalls.value = []
+    targetId.value = prefillVendorId
   }
 })
 

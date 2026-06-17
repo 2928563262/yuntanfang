@@ -12,6 +12,7 @@
       <p>{{ order.stallName }} · 取货时间 {{ order.pickupTime }}</p>
       <div class="hero-actions">
         <RouterLink v-if="isCompleted" class="primary-pill" :to="`/reviews/create/${order.id}`">发布评价</RouterLink>
+        <RouterLink class="ghost-pill" :to="{ path: '/complaints/create', query: { orderId: order.id, vendorId: order.vendorId, stallName: order.stallName } }">提交投诉</RouterLink>
         <button class="ghost-pill" type="button">联系摊主</button>
       </div>
     </section>
