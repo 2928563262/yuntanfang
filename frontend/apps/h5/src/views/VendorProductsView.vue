@@ -19,6 +19,7 @@
           </div>
           <div class="meta-row">
             <span>¥{{ item.price ?? '-' }}</span>
+            <span>{{ stallName(item.stallId) }}</span>
           </div>
         </article>
         <article v-if="!loading && products.length === 0" class="list-card">
@@ -29,6 +30,14 @@
 
       <aside class="card form-list">
         <h2>上架商品</h2>
+        <div class="field-card">
+          <label>所属摊位</label>
+          <select v-model.number="stallId">
+            <option v-for="stall in approvedStalls" :key="stall.stallId" :value="stall.stallId">
+              {{ stall.stallName || `摊位 #${stall.stallId}` }}
+            </option>
+          </select>
+        </div>
         <div class="field-card">
           <label>商品名称</label>
           <input v-model="name" placeholder="如：招牌烤串" />
@@ -47,23 +56,35 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { vendorApi } from '@yuntanfang/api'
 
 const products = ref<any[]>([])
+const reservations = ref<any[]>([])
 const loading = ref(false)
 const name = ref('')
 const price = ref<number | null>(null)
+const stallId = ref<number | null>(null)
 const error = ref('')
 const submitting = ref(false)
+
+const approvedStalls = computed(() => reservations.value.filter((item) => item.status === 'approved' && item.stallId))
+
+function stallName(id: number | null | undefined) {
+  const stall = reservations.value.find((item) => Number(item.stallId) === Number(id))
+  return stall?.stallName ? `所属摊位：${stall.stallName}` : id ? `摊位 #${id}` : '未绑定摊位'
+}
 
 async function load() {
   loading.value = true
   try {
-    const res = await vendorApi.products()
-    products.value = res.data.data?.records ?? []
+    const [productRes, reservationRes] = await Promise.all([vendorApi.products(), vendorApi.reservations()])
+    products.value = productRes.data.data?.records ?? []
+    reservations.value = reservationRes.data.data?.records ?? []
+    stallId.value = stallId.value ?? approvedStalls.value[0]?.stallId ?? null
   } catch {
     products.value = []
+    reservations.value = []
   } finally {
     loading.value = false
   }
@@ -75,9 +96,13 @@ async function add() {
     error.value = '请填写商品名称'
     return
   }
+  if (!stallId.value) {
+    error.value = '请先选择已通过审批并释放的摊位'
+    return
+  }
   submitting.value = true
   try {
-    await vendorApi.addProduct({ productName: name.value, price: price.value ?? undefined })
+    await vendorApi.addProduct({ stallId: stallId.value, productName: name.value, price: price.value ?? undefined })
     name.value = ''
     price.value = null
     await load()

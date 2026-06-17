@@ -17,7 +17,7 @@
       <form class="card form-list login-form" @submit.prevent="login">
         <div class="field-card">
           <label>账号</label>
-          <input v-model="username" autocomplete="username" placeholder="test1 / test2 / test3" />
+          <input v-model="username" autocomplete="username" placeholder="test1 / test2 / test3 / test4" />
         </div>
         <div class="field-card">
           <label>密码</label>
@@ -25,7 +25,7 @@
         </div>
         <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
         <button class="primary-pill" type="submit">登录</button>
-        <p class="muted">test1 为普通用户，test2 为商家，test3 为管理后台账号。</p>
+        <p class="muted">test1 为普通用户，test2 为已审核商家，test4 为待审核摊主，test3 为管理后台账号。</p>
       </form>
 
       <aside class="card login-accounts">

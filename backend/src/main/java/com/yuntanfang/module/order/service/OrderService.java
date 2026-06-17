@@ -10,6 +10,8 @@ import com.yuntanfang.module.order.entity.OrderStatusLog;
 import com.yuntanfang.module.order.mapper.OrderItemMapper;
 import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.order.mapper.OrderStatusLogMapper;
+import com.yuntanfang.module.product.entity.Product;
+import com.yuntanfang.module.product.mapper.ProductMapper;
 import com.yuntanfang.module.review.entity.Review;
 import com.yuntanfang.module.review.mapper.ReviewMapper;
 import com.yuntanfang.module.stall.entity.Stall;
@@ -32,6 +34,7 @@ public class OrderService {
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final ReviewMapper reviewMapper;
     private final StallMapper stallMapper;
+    private final ProductMapper productMapper;
 
     @Transactional
     public Order create(Long userId, Long vendorId, Long stallId, String stallName,
@@ -45,6 +48,12 @@ public class OrderService {
         if (stall == null || !"approved".equals(stall.getAuditStatus())) {
             throw new BusinessException("摊位不可预约");
         }
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException("请选择至少一件商品");
+        }
+        if (pickupTime == null || pickupTime.isBlank()) {
+            throw new BusinessException("请填写取货时间");
+        }
         Order order = new Order();
         order.setUserId(userId);
         order.setVendorId(stall.getVendorId());
@@ -57,21 +66,32 @@ public class OrderService {
         orderMapper.insert(order);
 
         BigDecimal total = BigDecimal.ZERO;
-        if (items != null) {
-            for (Map<String, Object> item : items) {
-                OrderItem orderItem = new OrderItem();
-                orderItem.setOrderId(order.getId());
-                if (item.get("productId") != null) {
-                    orderItem.setProductId(Long.valueOf(String.valueOf(item.get("productId"))));
-                }
-                orderItem.setProductName(item.get("productName") == null ? null : String.valueOf(item.get("productName")));
-                int quantity = item.get("quantity") == null ? 1 : Integer.parseInt(String.valueOf(item.get("quantity")));
-                orderItem.setQuantity(quantity);
-                BigDecimal price = item.get("price") == null ? BigDecimal.ZERO : new BigDecimal(String.valueOf(item.get("price")));
-                orderItem.setPrice(price);
-                total = total.add(price.multiply(BigDecimal.valueOf(quantity)));
-                orderItemMapper.insert(orderItem);
+        for (Map<String, Object> item : items) {
+            Long productId = item.get("productId") == null ? null : Long.valueOf(String.valueOf(item.get("productId")));
+            if (productId == null) {
+                throw new BusinessException("请选择商品");
             }
+            Product product = productMapper.selectById(productId);
+            if (product == null || !stall.getId().equals(product.getStallId())) {
+                throw new BusinessException("商品不属于当前摊位");
+            }
+            if (!"on_sale".equals(product.getStatus())) {
+                throw new BusinessException("商品未上架，暂不可预约");
+            }
+            int quantity = item.get("quantity") == null ? 1 : Integer.parseInt(String.valueOf(item.get("quantity")));
+            if (quantity < 1) {
+                throw new BusinessException("商品数量至少为 1");
+            }
+            BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrderId(order.getId());
+            orderItem.setProductId(product.getId());
+            orderItem.setProductName(product.getProductName());
+            orderItem.setQuantity(quantity);
+            orderItem.setPrice(price);
+            total = total.add(price.multiply(BigDecimal.valueOf(quantity)));
+            orderItemMapper.insert(orderItem);
         }
         order.setTotalAmount(total);
         orderMapper.updateById(order);

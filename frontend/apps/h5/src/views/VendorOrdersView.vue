@@ -26,6 +26,7 @@
           <span>¥{{ order.totalAmount != null ? Number(order.totalAmount).toFixed(2) : '0.00' }}</span>
         </div>
         <div class="action-grid">
+          <button class="ghost-pill" type="button" @click="setStatus(order.id, 'accepted')">接单</button>
           <button class="ghost-pill" type="button" @click="setStatus(order.id, 'cancelled')">拒单</button>
           <button class="ghost-pill" type="button" @click="setStatus(order.id, 'preparing')">备货中</button>
           <button class="primary-pill" type="button" @click="setStatus(order.id, 'completed')">完成</button>

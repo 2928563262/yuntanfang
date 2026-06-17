@@ -20,14 +20,14 @@
         <article v-for="item in reservations" :key="item.id" class="list-card">
           <div class="list-card-header">
             <div>
-              <h3>摊位 #{{ item.stallId }}</h3>
-              <p>预约编号 {{ item.id }}</p>
+              <h3>{{ item.stallName || `摊位 #${item.stallId}` }}</h3>
+              <p>预约编号 {{ item.id }} · 摊位编号 {{ item.stallId }}</p>
             </div>
             <span class="status-tag" :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
           </div>
           <div class="meta-row">
             <span v-if="item.status === 'approved'">审批通过，摊位已在用户端展示</span>
-            <span v-else-if="item.status === 'rejected'">预约被驳回，可重新预约</span>
+            <span v-else-if="item.status === 'rejected'">预约被驳回：{{ item.rejectReason || '可重新预约' }}</span>
             <span v-else>等待后台审批中</span>
           </div>
         </article>

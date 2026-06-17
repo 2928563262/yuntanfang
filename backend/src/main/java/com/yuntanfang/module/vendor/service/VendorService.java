@@ -142,6 +142,28 @@ public class VendorService {
         return PageResult.of(list);
     }
 
+    public PageResult<Map<String, Object>> reservationsWithStall(Long userId) {
+        PageResult<StallReservation> page = reservations(userId);
+        List<Map<String, Object>> records = page.records().stream()
+                .map(reservation -> {
+                    Stall stall = reservation.getStallId() == null ? null : stallMapper.selectById(reservation.getStallId());
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", reservation.getId());
+                    row.put("vendorId", reservation.getVendorId());
+                    row.put("stallId", reservation.getStallId());
+                    row.put("stallName", stall == null ? null : stall.getStallName());
+                    row.put("stallAuditStatus", stall == null ? null : stall.getAuditStatus());
+                    row.put("businessStatus", stall == null ? null : stall.getBusinessStatus());
+                    row.put("status", reservation.getStatus());
+                    row.put("rejectReason", reservation.getRejectReason());
+                    row.put("createdAt", reservation.getCreatedAt());
+                    row.put("updatedAt", reservation.getUpdatedAt());
+                    return row;
+                })
+                .toList();
+        return new PageResult<>(page.total(), page.pageNo(), page.pageSize(), records);
+    }
+
     @Transactional
     public StallReservation reserve(Long userId, Long stallId) {
         Vendor vendor = requireVendor(userId);
@@ -203,16 +225,24 @@ public class VendorService {
     }
 
     @Transactional
-    public Product addProduct(Long userId, String name, Object price, Long categoryId) {
+    public Product addProduct(Long userId, Long stallId, String name, Object price, Long categoryId) {
         Vendor vendor = requireVendor(userId);
+        if (stallId == null) {
+            throw new BusinessException("请选择商品所属摊位");
+        }
+        Stall stall = stallMapper.selectById(stallId);
+        if (stall == null || !vendor.getId().equals(stall.getVendorId()) || !"approved".equals(stall.getAuditStatus())) {
+            throw new BusinessException("只能给已释放且属于自己的摊位上架商品");
+        }
         Product product = new Product();
         product.setVendorId(vendor.getId());
+        product.setStallId(stall.getId());
         product.setCategoryId(categoryId);
         product.setProductName(name == null ? "新商品" : name);
         if (price != null) {
             product.setPrice(new BigDecimal(String.valueOf(price)));
         }
-        product.setStatus("draft");
+        product.setStatus("on_sale");
         productMapper.insert(product);
         return product;
     }

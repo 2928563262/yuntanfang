@@ -10,7 +10,7 @@
     </div>
 
     <div class="metrics">
-      <el-card v-for="metric in config.metrics" :key="metric.label" shadow="never">
+      <el-card v-for="metric in displayMetrics" :key="metric.label" shadow="never">
         <span>{{ metric.label }}</span>
         <strong>{{ metric.value }}</strong>
         <small>{{ metric.hint }}</small>
@@ -170,7 +170,8 @@ const liveConfigs: Record<string, LiveConfig> = {
       { prop: 'vendorName', label: '提交摊主', width: 160 },
       { prop: 'qualificationType', label: '资质类型', width: 160 },
       { prop: 'mediaUrl', label: '材料地址' },
-      { prop: 'status', label: '状态', width: 150, type: 'status' }
+      { prop: 'status', label: '状态', width: 150, type: 'status' },
+      { prop: 'rejectReason', label: '驳回原因', width: 160 }
     ]
   },
   '/special-identities': {
@@ -181,7 +182,8 @@ const liveConfigs: Record<string, LiveConfig> = {
       { prop: 'vendorName', label: '提交摊主', width: 160 },
       { prop: 'identityType', label: '身份类型', width: 160 },
       { prop: 'publicWelfareTagId', label: '公益标签ID', width: 120 },
-      { prop: 'status', label: '状态', width: 200, type: 'status' }
+      { prop: 'status', label: '状态', width: 200, type: 'status' },
+      { prop: 'rejectReason', label: '驳回原因', width: 160 }
     ]
   },
   '/stall-reservations': {
@@ -200,8 +202,22 @@ const liveConfigs: Record<string, LiveConfig> = {
 
 const live = computed<LiveConfig | null>(() => liveConfigs[route.path] ?? null)
 const rows = ref<any[]>([])
+const overview = ref<Record<string, number>>({})
 const loading = ref(false)
 const pendingCount = computed(() => rows.value.filter((r) => r.status === 'pending').length)
+const displayMetrics = computed(() => {
+  if (route.path !== '/dashboard') {
+    return config.value.metrics
+  }
+  return [
+    { label: '商家数', value: overview.value.vendors ?? '-', hint: '真实商家总量' },
+    { label: '用户数', value: overview.value.users ?? '-', hint: '真实用户总量' },
+    { label: '摊位数', value: overview.value.stalls ?? '-', hint: '已建摊位总量' },
+    { label: '订单数', value: overview.value.orders ?? '-', hint: '真实订单总量' },
+    { label: '商品数', value: overview.value.products ?? '-', hint: '真实商品总量' },
+    { label: '投诉数', value: overview.value.complaints ?? '-', hint: '真实投诉总量' }
+  ]
+})
 
 function statusMeta(status: string) {
   switch (status) {
@@ -215,6 +231,19 @@ function statusMeta(status: string) {
 }
 
 async function reload() {
+  if (route.path === '/dashboard') {
+    loading.value = true
+    try {
+      const res = await adminApi.overview()
+      overview.value = res.data.data ?? {}
+    } catch (err: any) {
+      ElMessage.error(err?.response?.data?.message ?? '加载失败')
+      overview.value = {}
+    } finally {
+      loading.value = false
+    }
+    return
+  }
   const cfg = live.value
   if (!cfg) return
   loading.value = true
@@ -262,7 +291,7 @@ async function reject(row: any) {
 watch(
   () => route.path,
   () => {
-    if (live.value) reload()
+    if (live.value || route.path === '/dashboard') reload()
   },
   { immediate: true }
 )

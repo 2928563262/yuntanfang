@@ -93,9 +93,9 @@ public class VendorController {
     }
 
     @GetMapping("/stall-reservations")
-    public ApiResponse<PageResult<StallReservation>> reservations(
+    public ApiResponse<PageResult<Map<String, Object>>> reservations(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return ApiResponse.ok(vendorService.reservations(uid(authorization)));
+        return ApiResponse.ok(vendorService.reservationsWithStall(uid(authorization)));
     }
 
     @PostMapping("/stall-reservations")
@@ -123,7 +123,7 @@ public class VendorController {
     public ApiResponse<Product> product(
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return ApiResponse.ok(vendorService.addProduct(uid(authorization), str(body, "productName"), body.get("price"), lng(body, "categoryId")));
+        return ApiResponse.ok(vendorService.addProduct(uid(authorization), lng(body, "stallId"), str(body, "productName"), body.get("price"), lng(body, "categoryId")));
     }
 
     @GetMapping("/products")

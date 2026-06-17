@@ -13,7 +13,7 @@
     </section>
 
     <section class="section list-stack">
-      <article v-for="order in filteredOrders" :key="order.id" class="list-card">
+      <RouterLink v-for="order in filteredOrders" :key="order.id" class="list-card" :to="`/orders/${order.id}`">
         <div class="list-card-header">
           <div>
             <h3>{{ order.stall }}</h3>
@@ -28,7 +28,7 @@
           <span>订单号 {{ order.id }}</span>
           <span>金额 ¥{{ order.amount }}</span>
         </div>
-      </article>
+      </RouterLink>
       <article v-if="!loading && filteredOrders.length === 0" class="list-card">
         <h3>暂无订单</h3>
         <p>去附近摊位预约一单，订单会出现在这里。</p>

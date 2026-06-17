@@ -177,6 +177,7 @@ public class DashboardService {
             if (vendor == null || !"approved".equals(vendor.getStatus())) {
                 throw new BusinessException("请先通过该摊主的入驻审核，再审批摊位预约");
             }
+            requireVendorCertificationReady(vendor.getId());
             Stall stall = stallMapper.selectById(reservation.getStallId());
             if (stall == null) {
                 throw new BusinessException("预约绑定的摊位不存在，无法释放");
@@ -219,6 +220,46 @@ public class DashboardService {
         return reservation;
     }
 
+    private void requireVendorCertificationReady(Long vendorId) {
+        long pendingQualifications = qualificationMapper.selectCount(new LambdaQueryWrapper<Qualification>()
+                .eq(Qualification::getVendorId, vendorId)
+                .eq(Qualification::getStatus, "pending"));
+        if (pendingQualifications > 0) {
+            throw new BusinessException("请先完成该摊主的资质审核，再审批摊位预约");
+        }
+        long rejectedQualifications = qualificationMapper.selectCount(new LambdaQueryWrapper<Qualification>()
+                .eq(Qualification::getVendorId, vendorId)
+                .eq(Qualification::getStatus, "rejected"));
+        if (rejectedQualifications > 0) {
+            throw new BusinessException("该摊主存在被驳回的资质材料，不能释放摊位");
+        }
+        long approvedQualifications = qualificationMapper.selectCount(new LambdaQueryWrapper<Qualification>()
+                .eq(Qualification::getVendorId, vendorId)
+                .eq(Qualification::getStatus, "approved"));
+        if (approvedQualifications == 0) {
+            throw new BusinessException("该摊主还没有已通过的资质材料，不能释放摊位");
+        }
+
+        long pendingIdentities = specialIdentityMapper.selectCount(new LambdaQueryWrapper<SpecialIdentity>()
+                .eq(SpecialIdentity::getVendorId, vendorId)
+                .eq(SpecialIdentity::getStatus, "pending"));
+        if (pendingIdentities > 0) {
+            throw new BusinessException("请先完成该摊主的公益/特殊身份审核，再审批摊位预约");
+        }
+        long rejectedIdentities = specialIdentityMapper.selectCount(new LambdaQueryWrapper<SpecialIdentity>()
+                .eq(SpecialIdentity::getVendorId, vendorId)
+                .eq(SpecialIdentity::getStatus, "rejected"));
+        if (rejectedIdentities > 0) {
+            throw new BusinessException("该摊主存在被驳回的公益/特殊身份申请，不能释放摊位");
+        }
+        long approvedIdentities = specialIdentityMapper.selectCount(new LambdaQueryWrapper<SpecialIdentity>()
+                .eq(SpecialIdentity::getVendorId, vendorId)
+                .eq(SpecialIdentity::getStatus, "approved"));
+        if (approvedIdentities == 0) {
+            throw new BusinessException("该摊主还没有已通过的公益/特殊身份申请，不能释放摊位");
+        }
+    }
+
     // ===== 审核队列（带摊主名称，供后台列表展示）=====
 
     private Map<Long, String> vendorNames() {
@@ -238,6 +279,7 @@ public class DashboardService {
                     row.put("qualificationType", q.getQualificationType());
                     row.put("mediaUrl", q.getMediaUrl());
                     row.put("status", q.getStatus());
+                    row.put("auditOpinion", q.getAuditOpinion());
                     row.put("rejectReason", q.getRejectReason());
                     row.put("updatedAt", q.getUpdatedAt());
                     return row;
@@ -259,6 +301,7 @@ public class DashboardService {
                     row.put("publicWelfareTagId", si.getPublicWelfareTagId());
                     row.put("status", si.getStatus());
                     row.put("displayOnFront", si.getDisplayOnFront());
+                    row.put("auditOpinion", si.getAuditOpinion());
                     row.put("rejectReason", si.getRejectReason());
                     row.put("updatedAt", si.getUpdatedAt());
                     return row;
@@ -281,6 +324,7 @@ public class DashboardService {
                     row.put("stallId", r.getStallId());
                     row.put("stallName", stallNames.get(r.getStallId()));
                     row.put("status", r.getStatus());
+                    row.put("rejectReason", r.getRejectReason());
                     row.put("updatedAt", r.getUpdatedAt());
                     return row;
                 })
