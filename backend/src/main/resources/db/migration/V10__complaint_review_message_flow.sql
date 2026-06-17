@@ -1,0 +1,33 @@
+ALTER TABLE t_complaint
+  ADD COLUMN order_id BIGINT NULL,
+  ADD COLUMN complaint_type VARCHAR(64) NULL,
+  ADD COLUMN process_result VARCHAR(512) NULL,
+  ADD COLUMN assignee_id BIGINT NULL,
+  ADD COLUMN processor_id BIGINT NULL,
+  ADD COLUMN vendor_name VARCHAR(128) NULL,
+  ADD COLUMN target_name VARCHAR(128) NULL;
+
+ALTER TABLE t_review
+  ADD COLUMN vendor_id BIGINT NULL,
+  ADD COLUMN reply VARCHAR(512) NULL,
+  ADD COLUMN replied_at DATETIME NULL,
+  ADD COLUMN image_url VARCHAR(512) NULL;
+
+CREATE TABLE IF NOT EXISTS t_message (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NULL,
+  role VARCHAR(32) NULL,
+  target_type VARCHAR(32) NOT NULL DEFAULT 'user',
+  title VARCHAR(128) NOT NULL,
+  content VARCHAR(512),
+  biz_type VARCHAR(64),
+  biz_id BIGINT,
+  status VARCHAR(32) NOT NULL DEFAULT 'unread',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+UPDATE t_review r
+JOIN t_order o ON r.order_id = o.id
+SET r.vendor_id = o.vendor_id
+WHERE r.vendor_id IS NULL;

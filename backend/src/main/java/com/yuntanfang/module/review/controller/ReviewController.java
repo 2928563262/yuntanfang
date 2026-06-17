@@ -22,6 +22,6 @@ public class ReviewController {
     @GetMapping("/my")
     public ApiResponse<PageResult<Review>> my(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return ApiResponse.ok(reviewService.my(authSupport.currentUserId(authorization)));
+        return ApiResponse.ok(reviewService.my(authSupport.requireUserIdWithRole(authorization, "consumer")));
     }
 }

@@ -61,7 +61,7 @@ async function submitReview() {
   submitting.value = true
   try {
     const avg = Math.round(reviewMetrics.reduce((sum, m) => sum + ratings[m], 0) / reviewMetrics.length)
-    await orderApi.review(orderId, { rating: avg })
+    await orderApi.review(orderId, { rating: avg, content: content.value })
     router.push('/my-reviews')
   } catch (err: any) {
     error.value = err?.response?.data?.message ?? '提交失败，请确认已登录'

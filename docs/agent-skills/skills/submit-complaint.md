@@ -58,15 +58,16 @@
   "label": "确认提交投诉",
   "route": "/complaints/create",
   "payload": {
-    "complaintId": 185733,
     "target": "烟火小摊",
+    "vendorId": 1,
+    "stallId": 1,
     "type": "卫生问题",
     "description": "现场卫生需要核实。",
-    "status": "处理中"
+    "status": "待提交"
   }
 }
 ```
 
 ## 前端行为
 
-用户确认后进入 `/complaints/create`，带上投诉对象、类型和描述；确认提交后调用 `POST /api/complaints`，成功后跳转 `/complaints`。
+用户确认后调用 `POST /api/complaints`。若后端能通过 `target` 匹配真实摊位，payload 必须带上 `vendorId` 和 `stallId`；若用户明确说了订单号，也要带上 `orderId`。成功后跳转 `/complaints`。

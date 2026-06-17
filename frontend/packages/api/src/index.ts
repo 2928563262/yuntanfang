@@ -74,17 +74,23 @@ export const orderApi = {
   create: (payload: Record<string, any>) => http.post<ApiResponse<any>>('/orders', payload),
   my: (pageNo = 1, pageSize = 50) => http.get<ApiResponse<PageResult<any>>>('/orders/my', { params: { pageNo, pageSize } }),
   detail: (id: string | number) => http.get<ApiResponse<any>>(`/orders/${id}`),
-  review: (id: string | number, payload: { rating: number }) => http.post<ApiResponse<any>>(`/orders/${id}/reviews`, payload)
+  review: (id: string | number, payload: { rating: number; content?: string; imageUrl?: string }) =>
+    http.post<ApiResponse<any>>(`/orders/${id}/reviews`, payload)
 }
 
 export const complaintApi = {
-  create: (payload: { vendorId?: number; description: string }) => http.post<ApiResponse<any>>('/complaints', payload),
+  create: (payload: { vendorId?: number; orderId?: number; type?: string; description: string }) => http.post<ApiResponse<any>>('/complaints', payload),
   my: () => http.get<ApiResponse<PageResult<any>>>('/complaints/my'),
   detail: (id: string | number) => http.get<ApiResponse<any>>(`/complaints/${id}`)
 }
 
 export const reviewApi = {
   my: () => http.get<ApiResponse<PageResult<any>>>('/reviews/my')
+}
+
+export const messageApi = {
+  my: () => http.get<ApiResponse<PageResult<any>>>('/messages/my'),
+  read: (id: string | number) => http.put<ApiResponse<any>>(`/messages/${id}/read`, {})
 }
 
 export const interactionApi = {
@@ -110,6 +116,8 @@ export const vendorApi = {
   orders: () => http.get<ApiResponse<PageResult<any>>>('/vendor/orders'),
   orderDetail: (id: string | number) => http.get<ApiResponse<any>>(`/vendor/orders/${id}`),
   updateOrderStatus: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/vendor/orders/${id}/status`, { status }),
+  reviews: () => http.get<ApiResponse<PageResult<any>>>('/vendor/reviews'),
+  replyReview: (id: string | number, reply: string) => http.post<ApiResponse<any>>(`/vendor/reviews/${id}/reply`, { reply }),
   addProduct: (payload: { productName: string; price?: number; categoryId?: number; stallId?: number }) => http.post<ApiResponse<any>>('/vendor/products', payload),
   updateProduct: (id: string | number, payload: { productName?: string; price?: number; description?: string; status?: string; categoryId?: number; stallId?: number }) =>
     http.put<ApiResponse<any>>(`/vendor/products/${id}`, payload),
@@ -132,8 +140,9 @@ export const adminApi = {
   auditSpecialIdentity: (id: string | number, status: string, reason?: string) => http.put<ApiResponse<any>>(`/admin/special-identities/${id}/audit`, { status, reason }),
   reservations: () => http.get<ApiResponse<PageResult<any>>>('/admin/stall-reservations'),
   auditReservation: (id: string | number, status: string, reason?: string) => http.put<ApiResponse<any>>(`/admin/stall-reservations/${id}/audit`, { status, reason }),
+  complaints: () => http.get<ApiResponse<PageResult<any>>>('/admin/complaints'),
   assignComplaint: (id: string | number) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/assign`, {}),
-  processComplaint: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/process`, { status }),
+  processComplaint: (id: string | number, status: string, result?: string) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/process`, { status, result }),
   createPolicy: (payload: { title: string; content?: string }) => http.post<ApiResponse<any>>('/admin/policies', payload),
   publishPolicy: (id: string | number) => http.post<ApiResponse<any>>(`/admin/policies/${id}/publish`)
 }

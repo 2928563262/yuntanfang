@@ -17,9 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,17 +26,6 @@ import java.util.Map;
 
 @Service
 public class AgentAssistantService {
-
-    private static final List<Map<String, Object>> STALLS = List.of(
-            stall(1, "烟火小摊", "林师傅", "地方特色", "营业中", "680m", "4.8", "北站中心公园东门",
-                    List.of("招牌烤串(10串)", "现炸薯条", "鲜榨果汁")),
-            stall(2, "乡野新农人鲜铺", "陈小禾", "农家特产", "今日推荐", "1.2km", "4.7", "市民广场南侧临时摊区",
-                    List.of("当季蔬果礼盒", "农家土鸡蛋(10枚)", "手工辣酱")),
-            stall(3, "非遗手作摊", "周老师", "非遗好物", "即将出摊", "2.0km", "4.9", "老街口文创夜市",
-                    List.of("生肖糖画", "定制糖牌", "糖画体验券")),
-            stall(4, "老城豆花摊", "老城豆花摊", "传统小吃", "营业中", "900m", "4.6", "老城十字街临时摊区",
-                    List.of("老城手作豆花", "咸口豆腐脑", "桂花冰豆浆", "红糖小豆花"))
-    );
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -117,11 +104,10 @@ public class AgentAssistantService {
                 全局规则：只抽取用户当前输入或历史中明确确认过的参数；不要猜测、不要默认补齐。缺必需参数时仍返回对应 intent 和已知参数，后端会追问。
                 1. search_stalls: 参数 keyword, category。必须有具体 keyword 或 category；"附近摊位"这种泛泛表达不算充分。
                 2. create_order: 参数 stallName, productName, quantity, pickupTime, contact。必须有用户明确说出的 productName；不能根据摊位默认补商品。
-                3. submit_review: 参数 orderId, rating, content。必须有订单指代（orderId 或 上一单/最近一单）且必须有明确评分信号（数字星级/好评/中评/差评/一般等）。
+                3. submit_review: 参数 orderId, rating, content。必须有明确订单号和明确评分信号（数字星级/好评/中评/差评/一般等）；不要把上一单、最近一单转换成订单号。
                 4. submit_complaint: 参数 target, type, description。必须有投诉对象 target，且必须有 type 或 description。
                 5. system_help: 参数 topic。
-                已知摊位：烟火小摊、乡野新农人鲜铺、非遗手作摊、老城豆花摊。
-                已知商品：招牌烤串(10串)、现炸薯条、鲜榨果汁、当季蔬果礼盒、农家土鸡蛋(10枚)、手工辣酱、生肖糖画、定制糖牌、糖画体验券、老城手作豆花、咸口豆腐脑、桂花冰豆浆、红糖小豆花。
+                摊位和商品以真实数据库为准，模型只能抽取用户明确说出的名称或关键词。
                 若用户只是问怎么用、入口在哪、能做什么，使用 system_help。
                 """;
     }
@@ -184,16 +170,16 @@ public class AgentAssistantService {
     private AgentChatResult searchStalls(Map<String, Object> parameters, String raw) {
         String keyword = safe(parameters.get("keyword")).toLowerCase(Locale.ROOT);
         String category = safe(parameters.get("category"));
-        List<Map<String, Object>> records = STALLS.stream()
-                .filter(stall -> category.isBlank() || category.equals(stall.get("category")))
-                .filter(stall -> keyword.isBlank() || String.join(" ", flatValues(stall)).toLowerCase(Locale.ROOT).contains(keyword))
+        List<Map<String, Object>> records = stallMapper.selectList(new LambdaQueryWrapper<Stall>()
+                        .eq(Stall::getAuditStatus, "approved")
+                        .orderByDesc(Stall::getRating)
+                        .orderByAsc(Stall::getId))
+                .stream()
+                .filter(stall -> category.isBlank() || category.equals(safe(stall.getCategory())))
+                .filter(stall -> keyword.isBlank() || searchableText(stall, productNames(stall.getId())).contains(keyword))
                 .limit(3)
+                .map(stall -> stallCard(stall, productNames(stall.getId())))
                 .toList();
-        if (records.isEmpty()) {
-            records = category.isBlank()
-                    ? STALLS
-                    : STALLS.stream().filter(stall -> category.equals(stall.get("category"))).toList();
-        }
         String summary = records.stream()
                 .map(stall -> stall.get("name") + "：" + stall.get("category") + "，" + stall.get("status")
                         + "，" + stall.get("distance") + "，评分 " + stall.get("rating") + "，地址 " + stall.get("address"))
@@ -254,16 +240,14 @@ public class AgentAssistantService {
     }
 
     private AgentChatResult submitReview(Map<String, Object> parameters, String raw, String message) {
-        int orderId = toInt(parameters.get("orderId"), recentOrderId(message));
+        int orderId = toInt(parameters.get("orderId"), 0);
         int rating = ratingFrom(parameters, message);
         String content = blankToDefault(safe(parameters.get("content")), defaultReviewContent(rating));
-        Map<String, Object> card = Map.of(
-                "reviewId", nextMockId(),
-                "orderId", orderId,
-                "rating", rating,
-                "content", content,
-                "status", "已发布"
-        );
+        Map<String, Object> card = new LinkedHashMap<>();
+        card.put("orderId", orderId);
+        card.put("rating", rating);
+        card.put("content", content);
+        card.put("status", "待确认");
         return result(
                 "评价已整理好，评分 " + rating + " 星。",
                 "submit_review",
@@ -277,15 +261,18 @@ public class AgentAssistantService {
         String target = safe(parameters.get("target"));
         String type = blankToDefault(safe(parameters.get("type")), "其他问题");
         String description = safe(parameters.get("description"));
-        Map<String, Object> card = Map.of(
-                "complaintId", nextMockId(),
-                "target", target,
-                "type", type,
-                "description", description,
-                "status", "处理中"
-        );
+        Stall stall = findStallByText(target);
+        Map<String, Object> card = new LinkedHashMap<>();
+        card.put("target", stall == null ? target : stall.getStallName());
+        card.put("type", type);
+        card.put("description", description);
+        card.put("status", "待提交");
+        if (stall != null) {
+            card.put("vendorId", stall.getVendorId());
+            card.put("stallId", stall.getId());
+        }
         return result(
-                "投诉工单已整理：" + target + "，类型为" + type + "。",
+                "投诉工单已整理：" + card.get("target") + "，类型为" + type + "。",
                 "submit_complaint",
                 new AgentAction("submit_complaint", "确认提交投诉", "/complaints/create", card),
                 List.of(card),
@@ -406,25 +393,59 @@ public class AgentAssistantService {
         );
     }
 
-    private static Map<String, Object> stall(int id, String name, String vendor, String category, String status, String distance,
-                                             String rating, String address, List<String> products) {
+    private Map<String, Object> stallCard(Stall stall, List<String> products) {
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("id", id);
-        data.put("name", name);
-        data.put("vendor", vendor);
-        data.put("category", category);
-        data.put("status", status);
-        data.put("distance", distance);
-        data.put("rating", rating);
-        data.put("address", address);
+        data.put("id", stall.getId());
+        data.put("vendorId", stall.getVendorId());
+        data.put("name", stall.getStallName());
+        data.put("stallName", stall.getStallName());
+        data.put("vendor", blankToDefault(safe(stall.getVendorName()), "摊主"));
+        data.put("category", safe(stall.getCategory()));
+        data.put("status", businessStatusLabel(stall.getBusinessStatus()));
+        data.put("distance", blankToDefault(safe(stall.getDistance()), "暂无距离"));
+        data.put("rating", ratingText(stall.getRating()));
+        data.put("address", safe(stall.getAddress()));
         data.put("products", products);
         return data;
     }
 
-    private static List<String> flatValues(Map<String, Object> data) {
-        List<String> values = new ArrayList<>();
-        data.values().forEach(value -> values.add(String.valueOf(value)));
-        return values;
+    private String searchableText(Stall stall, List<String> products) {
+        return String.join(" ",
+                safe(stall.getStallName()),
+                safe(stall.getVendorName()),
+                safe(stall.getCategory()),
+                safe(stall.getBusinessStatus()),
+                safe(stall.getAddress()),
+                safe(stall.getDescription()),
+                String.join(" ", products)
+        ).toLowerCase(Locale.ROOT);
+    }
+
+    private List<String> productNames(Long stallId) {
+        if (stallId == null) {
+            return List.of();
+        }
+        return productMapper.selectList(new LambdaQueryWrapper<Product>()
+                        .eq(Product::getStallId, stallId)
+                        .eq(Product::getStatus, "on_sale")
+                        .orderByAsc(Product::getId))
+                .stream()
+                .map(Product::getProductName)
+                .filter(name -> name != null && !name.isBlank())
+                .toList();
+    }
+
+    private static String businessStatusLabel(String status) {
+        return switch (safe(status)) {
+            case "open" -> "营业中";
+            case "closed" -> "已收摊";
+            case "upcoming" -> "即将出摊";
+            default -> blankToDefault(safe(status), "状态未设置");
+        };
+    }
+
+    private static String ratingText(BigDecimal rating) {
+        return rating == null ? "暂无" : rating.stripTrailingZeros().toPlainString();
     }
 
     private static String normalizeIntent(String intent) {
@@ -523,16 +544,12 @@ public class AgentAssistantService {
     }
 
     private static boolean hasOrderReference(Map<String, Object> parameters, String message) {
-        return toInt(parameters.get("orderId"), 0) > 0 || recentOrderId(message) > 0;
-    }
-
-    private static int recentOrderId(String message) {
-        return containsAny(message, "上一单", "最近一单", "刚才那单", "这单", "这个订单") ? 1002 : 0;
+        return toInt(parameters.get("orderId"), 0) > 0;
     }
 
     private static String reviewClarification(Map<String, Object> parameters, String message) {
         if (!hasOrderReference(parameters, message)) {
-            return "你想评价哪个订单？可以说订单号，或明确说上一单、最近一单。";
+            return "你想评价哪个订单？请告诉我具体订单号。";
         }
         return "你想给几星？可以说 1-5 星，或明确说好评、中评、差评。";
     }
@@ -607,6 +624,21 @@ public class AgentAssistantService {
                 .orElse(null);
     }
 
+    private Stall findStallByText(String target) {
+        String query = safe(target);
+        if (query.isBlank()) {
+            return null;
+        }
+        return stallMapper.selectList(new LambdaQueryWrapper<Stall>()
+                        .eq(Stall::getAuditStatus, "approved")
+                        .orderByAsc(Stall::getId))
+                .stream()
+                .filter(stall -> searchableText(stall, productNames(stall.getId())).contains(query.toLowerCase(Locale.ROOT))
+                        || query.contains(safe(stall.getStallName())))
+                .findFirst()
+                .orElse(null);
+    }
+
     private static boolean productAliasMatches(String query, String productName) {
         return switch (productName) {
             case "招牌烤串(10串)" -> containsAny(query, "烤串", "串");
@@ -643,11 +675,6 @@ public class AgentAssistantService {
 
     private static String blankToDefault(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
-    }
-
-    private static int nextMockId() {
-        String value = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HHmmss"));
-        return Integer.parseInt(value);
     }
 
     private record AgentDecision(String intent, Map<String, Object> parameters, String raw) {

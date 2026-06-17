@@ -29,20 +29,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { clearAuthSession, getAuthSession } from '@yuntanfang/shared'
-import { useUserDataStore } from '../stores/userData'
+import { complaintApi, interactionApi, messageApi, orderApi, reviewApi } from '@yuntanfang/api'
 
 const router = useRouter()
 const session = getAuthSession()
-const userData = useUserDataStore()
+const favoriteCount = ref<number | string>('-')
+const orderCount = ref<number | string>('-')
+const reviewCount = ref<number | string>('-')
+const complaintCount = ref<number | string>('-')
+const unreadCount = ref<number | string>('-')
 
 const metrics = computed(() => [
-  { value: userData.favorites.value.length, label: '我的收藏', path: '/favorites' },
-  { value: 12, label: '浏览足迹', path: '/footprints' },
-  { value: userData.reviews.value.length, label: '我的评价', path: '/my-reviews' },
-  { value: userData.complaints.value.length, label: '投诉进度', path: '/complaints' }
+  { value: favoriteCount.value, label: '我的收藏', path: '/favorites' },
+  { value: orderCount.value, label: '我的订单', path: '/orders' },
+  { value: reviewCount.value, label: '我的评价', path: '/my-reviews' },
+  { value: complaintCount.value, label: '投诉进度', path: '/complaints' },
+  { value: unreadCount.value, label: '未读消息', path: '/messages' }
 ])
 
 const actions = [
@@ -65,4 +70,34 @@ function logout() {
   clearAuthSession()
   router.push('/login')
 }
+
+async function loadMetrics() {
+  const [favorites, orders, reviews, complaints, messages] = await Promise.allSettled([
+    interactionApi.favorites(),
+    orderApi.my(),
+    reviewApi.my(),
+    complaintApi.my(),
+    messageApi.my()
+  ])
+
+  favoriteCount.value = countFrom(favorites)
+  orderCount.value = countFrom(orders)
+  reviewCount.value = countFrom(reviews)
+  complaintCount.value = countFrom(complaints)
+  if (messages.status === 'fulfilled') {
+    const records = messages.value.data.data?.records ?? []
+    unreadCount.value = records.filter((item: any) => item.status === 'unread').length
+  } else {
+    unreadCount.value = '-'
+  }
+}
+
+function countFrom(result: PromiseSettledResult<any>) {
+  if (result.status !== 'fulfilled') {
+    return '-'
+  }
+  return result.value.data.data?.total ?? result.value.data.data?.records?.length ?? 0
+}
+
+onMounted(loadMetrics)
 </script>

@@ -1,4 +1,4 @@
-package com.yuntanfang.module.review.entity;
+package com.yuntanfang.module.message.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -8,23 +8,19 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("t_review")
-public class Review {
+@TableName("t_message")
+public class Message {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Long orderId;
     private Long userId;
-    private Long vendorId;
-    private Integer rating;
-    private String status;
+    private String role;
+    private String targetType;
+    private String title;
     private String content;
-    private String userName;
-    private Long stallId;
-    private String stallName;
-    private String reply;
-    private LocalDateTime repliedAt;
-    private String imageUrl;
+    private String bizType;
+    private Long bizId;
+    private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

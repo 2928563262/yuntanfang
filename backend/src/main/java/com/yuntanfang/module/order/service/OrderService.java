@@ -10,6 +10,7 @@ import com.yuntanfang.module.order.entity.OrderStatusLog;
 import com.yuntanfang.module.order.mapper.OrderItemMapper;
 import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.order.mapper.OrderStatusLogMapper;
+import com.yuntanfang.module.message.service.MessageService;
 import com.yuntanfang.module.product.entity.Product;
 import com.yuntanfang.module.product.mapper.ProductMapper;
 import com.yuntanfang.module.review.entity.Review;
@@ -33,6 +34,7 @@ public class OrderService {
     private final OrderItemMapper orderItemMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final ReviewMapper reviewMapper;
+    private final MessageService messageService;
     private final StallMapper stallMapper;
     private final ProductMapper productMapper;
 
@@ -138,6 +140,19 @@ public class OrderService {
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
+        return detailResult(order);
+    }
+
+    public Map<String, Object> detail(Long id, Long userId) {
+        Order order = orderMapper.selectById(id);
+        if (order == null || !order.getUserId().equals(userId)) {
+            throw new BusinessException("订单不存在");
+        }
+        return detailResult(order);
+    }
+
+    private Map<String, Object> detailResult(Order order) {
+        Long id = order.getId();
         List<OrderItem> items = orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, id));
         List<OrderStatusLog> logs = orderStatusLogMapper.selectList(
@@ -150,20 +165,43 @@ public class OrderService {
     }
 
     @Transactional
-    public Review review(Long orderId, Long userId, Integer rating) {
+    public Review review(Long orderId, Long userId, Integer rating, String content, String imageUrl) {
+        if (userId == null) {
+            throw new BusinessException("未登录");
+        }
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
+        if (!userId.equals(order.getUserId())) {
+            throw new BusinessException("只能评价自己的订单");
+        }
+        if (!"completed".equals(order.getOrderStatus())) {
+            throw new BusinessException("订单完成后才能评价");
+        }
+        long exists = reviewMapper.selectCount(new LambdaQueryWrapper<Review>()
+                .eq(Review::getOrderId, orderId)
+                .eq(Review::getUserId, userId));
+        if (exists > 0) {
+            throw new BusinessException("该订单已评价");
+        }
         Review review = new Review();
         review.setOrderId(orderId);
         review.setUserId(userId);
+        review.setVendorId(order.getVendorId());
         review.setRating(rating == null ? 5 : rating);
         review.setStatus("published");
+        review.setContent(content == null || content.isBlank() ? "体验不错。" : content);
+        review.setUserName("用户" + userId);
+        review.setStallId(order.getStallId());
+        review.setStallName(order.getStallName());
+        review.setImageUrl(imageUrl);
         reviewMapper.insert(review);
         order.setOrderStatus("reviewed");
         orderMapper.updateById(order);
         writeLog(orderId, "reviewed");
+        messageService.create(null, "vendor", "role", "收到新评价",
+                order.getStallName() + " 收到一条用户评价。", "review", review.getId());
         return review;
     }
 

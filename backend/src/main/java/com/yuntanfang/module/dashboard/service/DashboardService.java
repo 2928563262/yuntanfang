@@ -8,6 +8,7 @@ import com.yuntanfang.module.complaint.mapper.ComplaintMapper;
 import com.yuntanfang.module.dashboard.entity.Policy;
 import com.yuntanfang.module.dashboard.mapper.NoticeMapper;
 import com.yuntanfang.module.dashboard.mapper.PolicyMapper;
+import com.yuntanfang.module.message.service.MessageService;
 import com.yuntanfang.module.order.entity.Order;
 import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.product.mapper.ProductMapper;
@@ -51,6 +52,7 @@ public class DashboardService {
     private final StallReservationMapper stallReservationMapper;
     private final QualificationMapper qualificationMapper;
     private final SpecialIdentityMapper specialIdentityMapper;
+    private final MessageService messageService;
 
     public Map<String, Object> overview() {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -83,6 +85,10 @@ public class DashboardService {
             vendor.setAuditOpinion(reason);
         }
         vendorMapper.updateById(vendor);
+        messageService.create(vendor.getUserId(), "vendor", "user",
+                "入驻审核" + ("approved".equals(s) ? "通过" : "未通过"),
+                "approved".equals(s) ? "你的摊主入驻申请已通过。" : "你的摊主入驻申请被驳回：" + reason,
+                "vendor_audit", vendor.getId());
         return vendor;
     }
 
@@ -103,6 +109,13 @@ public class DashboardService {
         }
         qualification.setStatus(s);
         qualificationMapper.updateById(qualification);
+        Vendor vendor = vendorMapper.selectById(qualification.getVendorId());
+        if (vendor != null) {
+            messageService.create(vendor.getUserId(), "vendor", "user",
+                    "资质审核" + ("approved".equals(s) ? "通过" : "未通过"),
+                    "approved".equals(s) ? "你的资质材料已通过。" : "你的资质材料被驳回：" + reason,
+                    "qualification", qualification.getId());
+        }
         return qualification;
     }
 
@@ -125,6 +138,13 @@ public class DashboardService {
         }
         identity.setStatus(s);
         specialIdentityMapper.updateById(identity);
+        Vendor vendor = vendorMapper.selectById(identity.getVendorId());
+        if (vendor != null) {
+            messageService.create(vendor.getUserId(), "vendor", "user",
+                    "公益/特殊身份审核" + ("approved".equals(s) ? "通过" : "未通过"),
+                    "approved".equals(s) ? "你的公益/特殊身份申请已通过。" : "你的公益/特殊身份申请被驳回：" + reason,
+                    "special_identity", identity.getId());
+        }
         return identity;
     }
 
@@ -217,6 +237,13 @@ public class DashboardService {
             }
         }
         stallReservationMapper.updateById(reservation);
+        Vendor vendor = vendorMapper.selectById(reservation.getVendorId());
+        if (vendor != null) {
+            messageService.create(vendor.getUserId(), "vendor", "user",
+                    "摊位预约" + ("approved".equals(s) ? "通过" : "未通过"),
+                    "approved".equals(s) ? "你的摊位预约已通过，摊位已释放。" : "你的摊位预约被驳回：" + reason,
+                    "stall_reservation", reservation.getId());
+        }
         return reservation;
     }
 
@@ -339,18 +366,30 @@ public class DashboardService {
             throw new BusinessException("投诉不存在");
         }
         complaint.setStatus("assigned");
+        complaint.setAssigneeId(1L);
         complaintMapper.updateById(complaint);
+        messageService.create(complaint.getUserId(), "consumer", "user", "投诉已受理",
+                "你的投诉已进入处理流程。", "complaint", complaint.getId());
         return complaint;
     }
 
+    public PageResult<Complaint> complaints() {
+        return PageResult.of(complaintMapper.selectList(
+                new LambdaQueryWrapper<Complaint>().orderByDesc(Complaint::getId)));
+    }
+
     @Transactional
-    public Complaint processComplaint(Long id, String status) {
+    public Complaint processComplaint(Long id, String status, String result) {
         Complaint complaint = complaintMapper.selectById(id);
         if (complaint == null) {
             throw new BusinessException("投诉不存在");
         }
         complaint.setStatus(status == null ? "processed" : status);
+        complaint.setProcessResult(result == null || result.isBlank() ? "已记录并完成处理。" : result);
+        complaint.setProcessorId(1L);
         complaintMapper.updateById(complaint);
+        messageService.create(complaint.getUserId(), "consumer", "user", "投诉处理结果",
+                complaint.getProcessResult(), "complaint", complaint.getId());
         return complaint;
     }
 

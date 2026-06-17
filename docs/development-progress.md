@@ -113,3 +113,93 @@
   - 订单详情可直接跳转到提交投诉。
   - 投诉页会携带订单号、商家 ID 和摊位名，自动预填投诉对象与描述前缀。
   - H5 构建已通过。
+
+### 模块 5：投诉工单处理闭环
+
+- 新增迁移 `V10__complaint_review_message_flow.sql`，补齐投诉字段：
+  - 关联订单 `order_id`。
+  - 投诉类型 `complaint_type`。
+  - 处理结果 `process_result`。
+  - 分派/处理人、投诉对象、商家名称快照。
+- 管理后台 `/admin/complaints` 已接入真实投诉列表。
+- 管理后台可处理/关闭投诉，处理结果会回写用户端“我的投诉”。
+- 用户端投诉列表展示投诉对象、类型、关联订单、处理结果和更新时间。
+- 投诉提交、受理、处理都会生成系统消息。
+
+### 模块 6：评价与商家回复闭环
+
+- 用户完成订单后可提交评分和文字评价。
+- 后端校验：
+  - 只能评价自己的订单。
+  - 订单必须是 `completed`。
+  - 同一订单不能重复评价。
+- 评价写入订单、用户、商家、摊位关联字段。
+- 商家端 `/vendor/reviews` 已接入真实评价列表。
+- 商家端可回复评价，回复会展示到用户端摊位详情。
+- 商家回复评价后会生成用户消息。
+
+### 模块 7：消息通知链路
+
+- 新增 `t_message` 消息表和 `/api/messages/my`、`/api/messages/{id}/read` 接口。
+- 用户端消息中心已接入真实消息。
+- 消息支持未读/已读状态。
+- 审核结果、订单状态变化、评价回复、投诉提交/处理会生成消息。
+- 商家端也可以读取角色消息。
+
+### 模块 8：后端基础权限加固
+
+- 新增 `RoleGuardInterceptor`，对核心路径按 token 角色限制：
+  - `/api/admin/**` 仅 admin/auditor/supervisor/system_admin。
+  - `/api/vendor/**` 仅 vendor。
+  - `/api/orders/**`、`/api/complaints/**`、`/api/reviews/**` 等用户操作仅 consumer。
+- 订单详情和投诉详情增加所有权校验。
+- 验收脚本已覆盖：
+  - 普通用户不能访问商家订单。
+  - 商家不能访问普通用户订单。
+  - 普通用户不能访问后台投诉工单。
+
+### 模块 9：扩展自动化验收
+
+- `deploy/scripts/verify-core-flow.ps1` 已扩展覆盖：
+  - 商品隔离。
+  - 创建订单返回商品明细。
+  - 用户/商家订单详情商品明细。
+  - 订单状态机。
+  - 完成订单后评价。
+  - 商家查看并回复评价。
+  - 摊位详情展示回复。
+  - 投诉创建、后台处理、用户回写。
+  - 消息生成和已读。
+  - 角色权限拒绝。
+- 已运行通过。
+
+### MVP 收口：Agent 真实接口、页面真实数据与验收脚本
+
+- Agent 搜索摊位已改为读取真实 `t_stall` / `t_product`：
+  - 只返回已审核释放的摊位。
+  - 商品列表只返回在售商品。
+  - 回复文案和卡片均来自真实查询结果，不再维护静态摊位列表。
+- Agent 评价/投诉 action 已收口到真实接口：
+  - 评价确认后由前端调用 `POST /api/orders/{id}/reviews`。
+  - 投诉确认后由前端调用 `POST /api/complaints`。
+  - 不再生成 mock reviewId / complaintId。
+  - 去掉“上一单/最近一单”自动映射假订单号的规则，缺具体订单号时追问。
+- Agent skill 文档已同步真实 API 规则：
+  - `docs/agent-skills/SKILL.md`
+  - `skills/search-stalls.md`
+  - `skills/submit-review.md`
+  - `skills/submit-complaint.md`
+- 用户端个人中心统计已改为真实接口：
+  - 收藏、订单、评价、投诉、未读消息均从后端读取。
+  - 接口失败时显示 `-`，不展示假数字。
+- 管理后台首页“待办流程”已改为真实 overview 数据，不再显示固定 mock 数字。
+- 自动化验收脚本已补充：
+  - Agent 搜索摊位返回真实后端数据。
+  - Agent 投诉 payload 可调用真实投诉接口落库。
+  - 商品下架后普通用户不能再下单该商品，随后恢复上架。
+- 本轮验证：
+  - 后端通过 Docker Maven 编译：`mvn -q -DskipTests compile`。
+  - H5 和管理后台 TypeScript + Vite 构建通过。
+  - 前端 lint：0 error，仅保留 Vue 格式 warning。
+  - `deploy/scripts/verify-core-flow.ps1` 已运行通过。
+  - H5/Admin 关键路由加载 smoke 已通过：登录、快速开始、摊位、订单、个人中心、商家工作台、管理后台首页、审核与投诉。

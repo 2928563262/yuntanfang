@@ -65,6 +65,7 @@
                 <div>
                   <h3>{{ review.userName ?? '匿名用户' }}</h3>
                   <p>{{ review.content }}</p>
+                  <p v-if="review.reply" class="muted">商家回复：{{ review.reply }}</p>
                 </div>
                 <span class="status-tag">{{ review.rating }} 星</span>
               </div>

@@ -91,8 +91,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { agentApi, orderApi, type AgentChatResult } from '@yuntanfang/api'
-import { useUserDataStore } from '../stores/userData'
+import { agentApi, complaintApi, orderApi, type AgentChatResult } from '@yuntanfang/api'
 
 type AgentMessage = { id: string; role: 'assistant' | 'user'; content: string }
 type AgentSession = {
@@ -107,7 +106,6 @@ type AgentSession = {
 const storageKey = 'ytf_agent_sessions_v1'
 const ttl = 1000 * 60 * 60 * 24
 const router = useRouter()
-const userData = useUserDataStore()
 const draft = ref('')
 const loading = ref(false)
 const activeSessionId = ref('')
@@ -235,7 +233,8 @@ async function runAction() {
         }
     try {
       const response = await orderApi.create(orderPayload)
-      const order = response.data.data
+      const result = response.data.data
+      const order = result.order ?? result
       pushMessage('assistant', `订单已创建，订单号 ${order.id}。`)
       router.push(`/orders/${order.id}`)
     } catch {
@@ -248,15 +247,19 @@ async function runAction() {
     const orderId = toNumber(payload.orderId, 0)
     const rating = toNumber(payload.rating, 0)
     if (orderId <= 0 || rating <= 0) {
-      pushMessage('assistant', '还缺订单或评分信息，请说明订单号/上一单，以及你想给几星。')
+      pushMessage('assistant', '还缺订单或评分信息，请说明具体订单号，以及你想给几星。')
       return
     }
-    userData.addReview({
-      orderId,
-      rating,
-      content: toText(payload.content, '整体体验不错，取餐流程顺畅。')
-    })
-    router.push('/my-reviews')
+    try {
+      await orderApi.review(orderId, {
+        rating,
+        content: toText(payload.content, '整体体验不错，取餐流程顺畅。')
+      })
+      pushMessage('assistant', `评价已发布，订单号 ${orderId}。`)
+      router.push('/my-reviews')
+    } catch {
+      pushMessage('assistant', '评价发布失败。请确认订单号正确且当前账号可以评价该订单。')
+    }
     return
   }
 
@@ -268,12 +271,18 @@ async function runAction() {
       pushMessage('assistant', '还缺投诉对象或问题描述，请补充要投诉哪个对象以及发生了什么。')
       return
     }
-    userData.addComplaint({
-      target,
-      type: type || '其他问题',
-      description
-    })
-    router.push('/complaints')
+    try {
+      await complaintApi.create({
+        vendorId: toNumber(payload.vendorId, 0) || undefined,
+        orderId: toNumber(payload.orderId, 0) || undefined,
+        type: type || '其他问题',
+        description: description || target
+      })
+      pushMessage('assistant', `投诉已提交：${target}。`)
+      router.push('/complaints')
+    } catch {
+      pushMessage('assistant', '投诉提交失败。请确认已用普通用户账号登录，然后再试一次。')
+    }
     return
   }
 
@@ -307,7 +316,7 @@ function newSession(): AgentSession {
     updatedAt: Date.now(),
     messages: [{ id: 'welcome', role: 'assistant', content: '我是云摊坊小助手，可以帮你处理常用事务。' }],
     result: null,
-    suggestedPrompts: ['找地方特色摊位', '预约一份招牌烤串', '订单怎么评价', '投诉卫生问题']
+    suggestedPrompts: ['找地方特色摊位', '预约一份招牌烤串', '评价订单 1 五星', '投诉烟火小摊卫生问题']
   }
 }
 

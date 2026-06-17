@@ -28,20 +28,24 @@ public class ComplaintController {
     public ApiResponse<Complaint> create(
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        Long userId = authSupport.currentUserId(authorization);
+        Long userId = authSupport.requireUserIdWithRole(authorization, "consumer");
         Long vendorId = body.get("vendorId") == null ? null : Long.valueOf(String.valueOf(body.get("vendorId")));
+        Long orderId = body.get("orderId") == null ? null : Long.valueOf(String.valueOf(body.get("orderId")));
+        String type = body.get("type") == null ? null : String.valueOf(body.get("type"));
         String description = body.get("description") == null ? null : String.valueOf(body.get("description"));
-        return ApiResponse.ok(complaintService.create(userId, vendorId, description));
+        return ApiResponse.ok(complaintService.create(userId, vendorId, orderId, type, description));
     }
 
     @GetMapping("/my")
     public ApiResponse<PageResult<Complaint>> my(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return ApiResponse.ok(complaintService.my(authSupport.currentUserId(authorization)));
+        return ApiResponse.ok(complaintService.my(authSupport.requireUserIdWithRole(authorization, "consumer")));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Complaint> detail(@PathVariable Long id) {
-        return ApiResponse.ok(complaintService.detail(id));
+    public ApiResponse<Complaint> detail(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(complaintService.detail(id, authSupport.requireUserIdWithRole(authorization, "consumer")));
     }
 }

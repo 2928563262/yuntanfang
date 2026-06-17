@@ -12,15 +12,18 @@
       <article v-for="item in complaints" :key="item.id" class="list-card">
         <div class="list-card-header">
           <div>
-            <h3>{{ item.vendorId ? ('摊主#' + item.vendorId) : '平台投诉' }}</h3>
+            <h3>{{ item.targetName || item.vendorName || (item.vendorId ? ('摊主#' + item.vendorId) : '平台投诉') }}</h3>
             <p>{{ item.description }}</p>
           </div>
           <span class="status-tag">{{ statusText(item.status) }}</span>
         </div>
         <div class="meta-row">
           <span>工单 {{ item.id }}</span>
-          <span>{{ item.createdAt }}</span>
+          <span>{{ item.complaintType || '服务问题' }}</span>
+          <span v-if="item.orderId">订单 {{ item.orderId }}</span>
+          <span>{{ item.updatedAt || item.createdAt }}</span>
         </div>
+        <p v-if="item.processResult" class="muted">处理结果：{{ item.processResult }}</p>
       </article>
       <article v-if="!loading && complaints.length === 0" class="list-card">
         <h3>暂无投诉</h3>
@@ -41,7 +44,8 @@ const statusZh: Record<string, string> = {
   submitted: '已提交',
   assigned: '已分派',
   processing: '处理中',
-  processed: '已处理'
+  processed: '已处理',
+  closed: '已关闭'
 }
 const statusText = (s: string) => statusZh[s] ?? s
 

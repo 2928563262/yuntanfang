@@ -101,7 +101,9 @@ async function submitComplaint() {
   try {
     await complaintApi.create({
       vendorId: targetId.value ?? undefined,
-      description: `[${type.value}] ${description.value}`
+      orderId: orderId.value ? Number(orderId.value) : undefined,
+      type: type.value,
+      description: description.value
     })
     router.push('/complaints')
   } catch (err: any) {

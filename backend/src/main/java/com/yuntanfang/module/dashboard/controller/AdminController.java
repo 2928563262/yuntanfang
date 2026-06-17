@@ -27,6 +27,11 @@ import java.util.Map;
 public class AdminController {
 
     private final DashboardService dashboardService;
+    private final com.yuntanfang.security.AuthSupport authSupport;
+
+    private void requireAdmin(String authorization) {
+        authSupport.requireAnyRole(authorization, "admin", "auditor", "supervisor", "system_admin");
+    }
 
     private static String str(Map<String, Object> body, String key) {
         Object value = body.get(key);
@@ -34,7 +39,8 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard/overview")
-    public ApiResponse<Map<String, Object>> overview() {
+    public ApiResponse<Map<String, Object>> overview(@org.springframework.web.bind.annotation.RequestHeader(value = "Authorization", required = false) String authorization) {
+        requireAdmin(authorization);
         return ApiResponse.ok(dashboardService.overview());
     }
 
@@ -93,9 +99,14 @@ public class AdminController {
         return ApiResponse.ok(dashboardService.assignComplaint(id));
     }
 
+    @GetMapping("/complaints")
+    public ApiResponse<PageResult<Complaint>> complaints() {
+        return ApiResponse.ok(dashboardService.complaints());
+    }
+
     @PutMapping("/complaints/{id}/process")
     public ApiResponse<Complaint> processComplaint(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return ApiResponse.ok(dashboardService.processComplaint(id, str(body, "status")));
+        return ApiResponse.ok(dashboardService.processComplaint(id, str(body, "status"), str(body, "result")));
     }
 
     @PostMapping("/policies")

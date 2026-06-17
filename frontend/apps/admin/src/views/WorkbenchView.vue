@@ -234,6 +234,21 @@ const liveConfigs: Record<string, LiveConfig> = {
       { prop: 'status', label: '状态', width: 130, type: 'status' },
       { prop: 'rejectReason', label: '驳回原因', width: 160 }
     ]
+  },
+  '/complaints': {
+    fetch: () => adminApi.complaints(),
+    audit: (id, status, reason) =>
+      status === 'approved'
+        ? adminApi.processComplaint(id, 'processed', reason || '已处理完成。')
+        : adminApi.processComplaint(id, 'closed', reason || '已关闭。'),
+    columns: [
+      { prop: 'id', label: '工单', width: 80 },
+      { prop: 'targetName', label: '投诉对象', width: 180 },
+      { prop: 'complaintType', label: '类型', width: 120 },
+      { prop: 'description', label: '描述' },
+      { prop: 'status', label: '状态', width: 130, type: 'status' },
+      { prop: 'processResult', label: '处理结果', width: 180 }
+    ]
   }
 }
 
@@ -264,6 +279,16 @@ function statusMeta(status: string) {
       return { type: 'success' as const, label: '已通过' }
     case 'rejected':
       return { type: 'danger' as const, label: '已驳回' }
+    case 'submitted':
+      return { type: 'warning' as const, label: '已提交' }
+    case 'assigned':
+      return { type: 'primary' as const, label: '已受理' }
+    case 'processing':
+      return { type: 'primary' as const, label: '处理中' }
+    case 'processed':
+      return { type: 'success' as const, label: '已处理' }
+    case 'closed':
+      return { type: 'info' as const, label: '已关闭' }
     default:
       return { type: 'warning' as const, label: '待审核' }
   }
@@ -301,6 +326,11 @@ function detailFields(row: any) {
     { label: '公益标签ID', value: row.publicWelfareTagId },
     { label: '摊位', value: row.stallName },
     { label: '摊位ID', value: row.stallId },
+    { label: '投诉对象', value: row.targetName },
+    { label: '关联订单', value: row.orderId },
+    { label: '投诉类型', value: row.complaintType },
+    { label: '投诉描述', value: row.description },
+    { label: '处理结果', value: row.processResult },
     { label: '审核意见', value: row.auditOpinion },
     { label: '驳回原因', value: row.rejectReason },
     { label: '更新时间', value: row.updatedAt }
@@ -340,7 +370,7 @@ async function approve(row: any) {
   if (!cfg) return
   try {
     await cfg.audit(row.id, 'approved')
-    ElMessage.success('已通过')
+    ElMessage.success(route.path === '/complaints' ? '已处理' : '已通过')
     selectedRow.value = null
     reload()
   } catch (err: any) {
@@ -352,13 +382,13 @@ async function reject(row: any) {
   const cfg = live.value
   if (!cfg) return
   try {
-    const { value } = await ElMessageBox.prompt('请输入驳回原因', '驳回', {
-      confirmButtonText: '确认驳回',
+    const { value } = await ElMessageBox.prompt(route.path === '/complaints' ? '请输入关闭/处理说明' : '请输入驳回原因', route.path === '/complaints' ? '关闭工单' : '驳回', {
+      confirmButtonText: route.path === '/complaints' ? '确认关闭' : '确认驳回',
       cancelButtonText: '取消',
-      inputPlaceholder: '例如：材料不清晰，请重新上传'
+      inputPlaceholder: route.path === '/complaints' ? '例如：已联系商家整改并反馈用户' : '例如：材料不清晰，请重新上传'
     })
     await cfg.audit(row.id, 'rejected', value)
-    ElMessage.success('已驳回')
+    ElMessage.success(route.path === '/complaints' ? '已关闭' : '已驳回')
     selectedRow.value = null
     reload()
   } catch (err: any) {
@@ -375,12 +405,12 @@ watch(
   { immediate: true }
 )
 
-const flows = [
-  { title: '商家入驻审核', count: 8, hint: '待线上初审' },
-  { title: '资质材料审核', count: 21, hint: '含 6 条需补充' },
-  { title: '投诉工单', count: 5, hint: '1 条临近超时' },
-  { title: '内容审核', count: 32, hint: '商品与故事' }
-]
+const flows = computed(() => [
+  { title: '商家数据', count: overview.value.vendors ?? '-', hint: '真实商家总量' },
+  { title: '摊位数据', count: overview.value.stalls ?? '-', hint: '已建摊位总量' },
+  { title: '订单数据', count: overview.value.orders ?? '-', hint: '真实订单总量' },
+  { title: '投诉工单', count: overview.value.complaints ?? '-', hint: '真实投诉总量' }
+])
 </script>
 
 <style scoped>

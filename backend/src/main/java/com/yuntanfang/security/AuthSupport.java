@@ -1,8 +1,11 @@
 package com.yuntanfang.security;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 
 /**
@@ -38,5 +41,29 @@ public class AuthSupport {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    public Long requireUserId(String authHeader) {
+        Long userId = currentUserId(authHeader);
+        if (userId == null) {
+            throw new AuthenticationCredentialsNotFoundException("未认证");
+        }
+        return userId;
+    }
+
+    public String requireAnyRole(String authHeader, String... roles) {
+        String role = currentRole(authHeader);
+        if (role == null) {
+            throw new AuthenticationCredentialsNotFoundException("未认证");
+        }
+        if (Arrays.stream(roles).noneMatch(role::equals)) {
+            throw new AccessDeniedException("无权限");
+        }
+        return role;
+    }
+
+    public Long requireUserIdWithRole(String authHeader, String... roles) {
+        requireAnyRole(authHeader, roles);
+        return requireUserId(authHeader);
     }
 }

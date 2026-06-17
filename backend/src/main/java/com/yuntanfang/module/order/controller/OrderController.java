@@ -39,12 +39,12 @@ public class OrderController {
 
     @PostMapping
     @SuppressWarnings("unchecked")
-    public ApiResponse<Order> create(
+    public ApiResponse<Map<String, Object>> create(
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        Long userId = authSupport.currentUserId(authorization);
+        Long userId = authSupport.requireUserIdWithRole(authorization, "consumer");
         List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items");
-        return ApiResponse.ok(orderService.create(
+        Order order = orderService.create(
                 userId,
                 lng(body, "vendorId"),
                 lng(body, "stallId"),
@@ -52,7 +52,8 @@ public class OrderController {
                 str(body, "pickupTime"),
                 str(body, "contactPhone"),
                 str(body, "remark"),
-                items));
+                items);
+        return ApiResponse.ok(orderService.detail(order.getId()));
     }
 
     @GetMapping("/my")
@@ -60,12 +61,14 @@ public class OrderController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(defaultValue = "1") long pageNo,
             @RequestParam(defaultValue = "10") long pageSize) {
-        return ApiResponse.ok(orderService.myWithItems(authSupport.currentUserId(authorization), pageNo, pageSize));
+        return ApiResponse.ok(orderService.myWithItems(authSupport.requireUserIdWithRole(authorization, "consumer"), pageNo, pageSize));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Map<String, Object>> detail(@PathVariable Long id) {
-        return ApiResponse.ok(orderService.detail(id));
+    public ApiResponse<Map<String, Object>> detail(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(orderService.detail(id, authSupport.requireUserIdWithRole(authorization, "consumer")));
     }
 
     @PostMapping("/{id}/reviews")
@@ -73,8 +76,8 @@ public class OrderController {
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        Long userId = authSupport.currentUserId(authorization);
+        Long userId = authSupport.requireUserIdWithRole(authorization, "consumer");
         Integer rating = body.get("rating") == null ? null : Integer.valueOf(String.valueOf(body.get("rating")));
-        return ApiResponse.ok(orderService.review(id, userId, rating));
+        return ApiResponse.ok(orderService.review(id, userId, rating, str(body, "content"), str(body, "imageUrl")));
     }
 }

@@ -4,6 +4,7 @@ import com.yuntanfang.common.ApiResponse;
 import com.yuntanfang.common.PageResult;
 import com.yuntanfang.module.order.entity.Order;
 import com.yuntanfang.module.product.entity.Product;
+import com.yuntanfang.module.review.entity.Review;
 import com.yuntanfang.module.vendor.entity.Qualification;
 import com.yuntanfang.module.vendor.entity.SpecialIdentity;
 import com.yuntanfang.module.vendor.entity.StallCheckin;
@@ -33,7 +34,7 @@ public class VendorController {
     private final AuthSupport authSupport;
 
     private Long uid(String authorization) {
-        return authSupport.currentUserId(authorization);
+        return authSupport.requireUserIdWithRole(authorization, "vendor");
     }
 
     private static String str(Map<String, Object> body, String key) {
@@ -168,5 +169,11 @@ public class VendorController {
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         return ApiResponse.ok(vendorService.replyReview(uid(authorization), id, str(body, "reply")));
+    }
+
+    @GetMapping("/reviews")
+    public ApiResponse<PageResult<Review>> reviews(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ApiResponse.ok(vendorService.reviews(uid(authorization)));
     }
 }

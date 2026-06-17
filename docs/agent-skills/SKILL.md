@@ -98,7 +98,7 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 
 ## 参数来源规则
 
-- 只能使用用户当前消息、历史中用户明确确认过的信息、系统已有静态数据。
+- 只能使用用户当前消息、历史中用户明确确认过的信息、真实接口返回的数据。
 - 禁止模型为了调用 API 自己补商品、摊位、订单、投诉对象、评分、问题类型。
 - 后端允许的系统默认值必须写在小 skill 中；未列出的字段都不能默认补齐。
 - 必需参数不足时必须返回 `ask_clarification`，且不调用功能 API。
@@ -108,7 +108,7 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 
 - `search_stalls` 至少需要 `keyword` 或 `category`；“附近摊位”“帮我找摊位”这类泛化表达必须追问。
 - `create_order` 必须有用户明确说出的 `productName`；只有 `stallName` 或“我想预约”时必须追问商品，不能按摊位默认补商品。
-- `submit_review` 必须有订单指代（订单号，或“上一单/最近一单”等明确上下文），且必须有明确评分信号（数字星级，或好评/中评/差评/一般等）。
+- `submit_review` 必须有具体订单号，且必须有明确评分信号（数字星级，或好评/中评/差评/一般等）。
 - `submit_complaint` 必须有 `target`，且必须有 `type` 或 `description`。
 - `system_help` 可直接响应，不要求必需参数。
 
@@ -119,7 +119,6 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 | `create_order` | `quantity` | `1` | 用户未说数量 |
 | `create_order` | `pickupTime` | `今天 19:00` | 用户未说取货时间 |
 | `create_order` | `vendorId`/`stallId`/`stallName`/`price` | 从真实商品和摊位表反查 | 用户明确商品但未说摊位 |
-| `submit_review` | `orderId` | 最近可评价订单 `1002` | 用户明确说“上一单/最近一单/这单/这个订单” |
 | `submit_review` | `rating` | `5/3/1` | 用户明确说好评/中评或一般/差评 |
 | `submit_review` | `content` | 按评分生成匹配文案 | 用户只给评分或好评/中评/差评 |
 | `submit_complaint` | `type` | `其他问题` | 用户给了对象和描述但未说类型 |
@@ -145,8 +144,8 @@ Agent 帮助普通用户更快掌握和使用云摊坊：
 
 - `open_route`：跳转到 `action.route`。
 - `create_order`：用 `action.payload.orderPayload` 调用 `POST /api/orders`，成功后跳转真实订单详情。
-- `submit_review`：写入 H5 本地评价 store，再跳转 `/my-reviews`。
-- `submit_complaint`：写入 H5 本地投诉 store，再跳转 `/complaints`。
+- `submit_review`：用 `action.payload.orderId/rating/content` 调用 `POST /api/orders/{id}/reviews`，成功后跳转 `/my-reviews`。
+- `submit_complaint`：用 `action.payload.vendorId/orderId/type/description` 调用 `POST /api/complaints`，成功后跳转 `/complaints`。
 
 ## 待开发
 

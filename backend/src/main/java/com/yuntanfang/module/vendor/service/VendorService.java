@@ -9,8 +9,11 @@ import com.yuntanfang.module.order.entity.OrderStatusLog;
 import com.yuntanfang.module.order.mapper.OrderItemMapper;
 import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.order.mapper.OrderStatusLogMapper;
+import com.yuntanfang.module.message.service.MessageService;
 import com.yuntanfang.module.product.entity.Product;
 import com.yuntanfang.module.product.mapper.ProductMapper;
+import com.yuntanfang.module.review.entity.Review;
+import com.yuntanfang.module.review.mapper.ReviewMapper;
 import com.yuntanfang.module.stall.entity.Stall;
 import com.yuntanfang.module.stall.mapper.StallMapper;
 import com.yuntanfang.module.vendor.entity.Qualification;
@@ -32,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +56,8 @@ public class VendorService {
     private final OrderItemMapper orderItemMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final StallMapper stallMapper;
+    private final ReviewMapper reviewMapper;
+    private final MessageService messageService;
 
     private Vendor requireVendor(Long userId) {
         if (userId == null) {
@@ -345,7 +351,19 @@ public class VendorService {
         log.setOrderId(orderId);
         log.setOrderStatus(order.getOrderStatus());
         orderStatusLogMapper.insert(log);
+        messageService.create(order.getUserId(), "consumer", "user", "订单状态更新",
+                "订单 " + order.getId() + " 已更新为 " + statusLabel(status) + "。", "order", order.getId());
         return order;
+    }
+
+    private String statusLabel(String status) {
+        return switch (status) {
+            case "accepted" -> "已接单";
+            case "preparing" -> "备货中";
+            case "completed" -> "已完成";
+            case "cancelled" -> "已取消";
+            default -> status;
+        };
     }
 
     public Map<String, Object> orderDetail(Long userId, Long orderId) {
@@ -386,11 +404,27 @@ public class VendorService {
     }
 
     public Map<String, Object> replyReview(Long userId, Long reviewId, String reply) {
-        requireVendor(userId);
+        Vendor vendor = requireVendor(userId);
+        Review review = reviewMapper.selectById(reviewId);
+        if (review == null || !vendor.getId().equals(review.getVendorId())) {
+            throw new BusinessException("评价不存在或无权回复");
+        }
+        review.setReply(reply == null || reply.isBlank() ? "感谢反馈，我们会继续改进。" : reply);
+        review.setRepliedAt(LocalDateTime.now());
+        reviewMapper.updateById(review);
+        messageService.create(review.getUserId(), "consumer", "user", "商家已回复评价",
+                vendor.getVendorName() + " 回复了你的评价。", "review", review.getId());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("reviewId", reviewId);
-        result.put("reply", reply);
+        result.put("reply", review.getReply());
         result.put("status", "replied");
         return result;
+    }
+
+    public PageResult<Review> reviews(Long userId) {
+        Vendor vendor = requireVendor(userId);
+        List<Review> list = reviewMapper.selectList(new LambdaQueryWrapper<Review>()
+                .eq(Review::getVendorId, vendor.getId()).orderByDesc(Review::getId));
+        return PageResult.of(list);
     }
 }
