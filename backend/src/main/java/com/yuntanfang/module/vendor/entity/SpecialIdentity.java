@@ -16,6 +16,11 @@ public class SpecialIdentity {
     private Long vendorId;
     private String identityType;
     private String status;
+    private Long publicWelfareTagId;
+    private Long auditorId;
+    private String auditOpinion;
+    private String rejectReason;
+    private Integer displayOnFront;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

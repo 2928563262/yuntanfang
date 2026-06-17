@@ -64,7 +64,7 @@ const stalls = ref<any[]>([])
 const loading = ref(false)
 
 function statusText(s: string) {
-  return s === 'open' ? '营业中' : s === 'closed' ? '休息中' : s
+  return s === 'open' ? '营业中' : s === 'closed' ? '休息中' : '暂未营业'
 }
 
 function selectCategory(item: string) {

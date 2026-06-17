@@ -27,14 +27,18 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-// 收到未认证时清掉旧 token，避免被过期/假 token 卡住
+// 收到未认证时清掉旧 token，避免被过期/假 token 卡住；并跳回登录页
 http.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error?.response?.status
     const code = error?.response?.data?.code
-    if (error?.response?.status === 401 || code === 401) {
+    if (status === 401 || code === 401) {
       localStorage.removeItem('ytf_token')
       localStorage.removeItem('ytf_mock_session')
+      if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
+        window.location.assign('/login')
+      }
     }
     return Promise.reject(error)
   }
@@ -107,16 +111,24 @@ export const vendorApi = {
   updateOrderStatus: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/vendor/orders/${id}/status`, { status }),
   addProduct: (payload: { productName: string; price?: number; categoryId?: number }) => http.post<ApiResponse<any>>('/vendor/products', payload),
   products: () => http.get<ApiResponse<PageResult<any>>>('/vendor/products'),
+  qualifications: () => http.get<ApiResponse<PageResult<any>>>('/vendor/qualifications'),
+  addQualification: (payload: { qualificationType: string; mediaUrl?: string }) => http.post<ApiResponse<any>>('/vendor/qualifications', payload),
+  specialIdentities: () => http.get<ApiResponse<PageResult<any>>>('/vendor/special-identities'),
+  addSpecialIdentity: (payload: { identityType: string }) => http.post<ApiResponse<any>>('/vendor/special-identities', payload),
   reservations: () => http.get<ApiResponse<PageResult<any>>>('/vendor/stall-reservations'),
   reserve: (payload: { stallId: number }) => http.post<ApiResponse<any>>('/vendor/stall-reservations', payload)
 }
 
 export const adminApi = {
   overview: () => http.get<ApiResponse<Record<string, number>>>('/admin/dashboard/overview'),
-  list: (module: string) => http.get<ApiResponse<PageResult<any>>>(`/admin/${module}`),
   vendorApplications: () => http.get<ApiResponse<PageResult<any>>>('/admin/vendors/applications'),
-  auditVendor: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/vendors/applications/${id}/audit`, { status }),
-  auditReservation: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/stall-reservations/${id}/audit`, { status }),
+  auditVendor: (id: string | number, status: string, reason?: string) => http.put<ApiResponse<any>>(`/admin/vendors/applications/${id}/audit`, { status, reason }),
+  qualifications: () => http.get<ApiResponse<PageResult<any>>>('/admin/qualifications'),
+  auditQualification: (id: string | number, status: string, reason?: string) => http.put<ApiResponse<any>>(`/admin/qualifications/${id}/audit`, { status, reason }),
+  specialIdentities: () => http.get<ApiResponse<PageResult<any>>>('/admin/special-identities'),
+  auditSpecialIdentity: (id: string | number, status: string, reason?: string) => http.put<ApiResponse<any>>(`/admin/special-identities/${id}/audit`, { status, reason }),
+  reservations: () => http.get<ApiResponse<PageResult<any>>>('/admin/stall-reservations'),
+  auditReservation: (id: string | number, status: string, reason?: string) => http.put<ApiResponse<any>>(`/admin/stall-reservations/${id}/audit`, { status, reason }),
   assignComplaint: (id: string | number) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/assign`, {}),
   processComplaint: (id: string | number, status: string) => http.put<ApiResponse<any>>(`/admin/complaints/${id}/process`, { status }),
   createPolicy: (payload: { title: string; content?: string }) => http.post<ApiResponse<any>>('/admin/policies', payload),

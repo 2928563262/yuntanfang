@@ -18,6 +18,7 @@ public class Stall {
     private Long areaId;
     private String stallName;
     private String businessStatus;
+    private String auditStatus;
     private String category;
     private BigDecimal rating;
     private String address;

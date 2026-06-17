@@ -16,6 +16,7 @@ public class StallReservation {
     private Long vendorId;
     private Long stallId;
     private String status;
+    private String rejectReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

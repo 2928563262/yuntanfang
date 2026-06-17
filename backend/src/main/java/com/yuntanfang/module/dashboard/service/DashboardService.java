@@ -13,11 +13,16 @@ import com.yuntanfang.module.order.mapper.OrderMapper;
 import com.yuntanfang.module.product.mapper.ProductMapper;
 import com.yuntanfang.module.review.mapper.ReviewMapper;
 import com.yuntanfang.module.stall.entity.Area;
+import com.yuntanfang.module.stall.entity.Stall;
 import com.yuntanfang.module.stall.mapper.AreaMapper;
 import com.yuntanfang.module.stall.mapper.StallMapper;
 import com.yuntanfang.module.user.mapper.UserMapper;
+import com.yuntanfang.module.vendor.entity.Qualification;
+import com.yuntanfang.module.vendor.entity.SpecialIdentity;
 import com.yuntanfang.module.vendor.entity.StallReservation;
 import com.yuntanfang.module.vendor.entity.Vendor;
+import com.yuntanfang.module.vendor.mapper.QualificationMapper;
+import com.yuntanfang.module.vendor.mapper.SpecialIdentityMapper;
 import com.yuntanfang.module.vendor.mapper.StallReservationMapper;
 import com.yuntanfang.module.vendor.mapper.VendorMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +49,8 @@ public class DashboardService {
     private final PolicyMapper policyMapper;
     private final NoticeMapper noticeMapper;
     private final StallReservationMapper stallReservationMapper;
+    private final QualificationMapper qualificationMapper;
+    private final SpecialIdentityMapper specialIdentityMapper;
 
     public Map<String, Object> overview() {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -55,38 +63,77 @@ public class DashboardService {
         return result;
     }
 
-    public PageResult<?> list(String module) {
-        List<?> data = switch (module == null ? "" : module) {
-            case "vendors", "vendor" -> vendorMapper.selectList(null);
-            case "users", "user" -> userMapper.selectList(null);
-            case "orders", "order" -> orderMapper.selectList(null);
-            case "complaints", "complaint" -> complaintMapper.selectList(null);
-            case "areas", "area" -> areaMapper.selectList(null);
-            case "stalls", "stall" -> stallMapper.selectList(null);
-            case "products", "product" -> productMapper.selectList(null);
-            case "reviews", "review" -> reviewMapper.selectList(null);
-            case "policies", "policy" -> policyMapper.selectList(null);
-            case "notices", "notice" -> noticeMapper.selectList(null);
-            case "stall-reservations", "reservations" -> stallReservationMapper.selectList(null);
-            default -> List.of();
-        };
-        return PageResult.of(data);
-    }
-
     public PageResult<Vendor> vendorApplications() {
         return PageResult.of(vendorMapper.selectList(
                 new LambdaQueryWrapper<Vendor>().orderByDesc(Vendor::getId)));
     }
 
     @Transactional
-    public Vendor auditVendor(Long id, String status) {
+    public Vendor auditVendor(Long id, String status, String reason) {
         Vendor vendor = vendorMapper.selectById(id);
         if (vendor == null) {
             throw new BusinessException("摊主不存在");
         }
-        vendor.setStatus(status == null ? "approved" : status);
+        String s = status == null ? "approved" : status;
+        vendor.setStatus(s);
+        if ("rejected".equals(s)) {
+            vendor.setRejectReason(reason);
+        } else {
+            vendor.setRejectReason(null);
+            vendor.setAuditOpinion(reason);
+        }
         vendorMapper.updateById(vendor);
         return vendor;
+    }
+
+    @Transactional
+    public Qualification auditQualification(Long id, String status, String reason) {
+        Qualification qualification = qualificationMapper.selectById(id);
+        if (qualification == null) {
+            throw new BusinessException("资质材料不存在");
+        }
+        String s = status == null ? "approved" : status;
+        if ("approved".equals(s)) {
+            requireVendorApproved(qualification.getVendorId(), "资质");
+            qualification.setRejectReason(null);
+            qualification.setAuditOpinion(reason);
+        } else {
+            qualification.setAuditOpinion(null);
+            qualification.setRejectReason(reason);
+        }
+        qualification.setStatus(s);
+        qualificationMapper.updateById(qualification);
+        return qualification;
+    }
+
+    @Transactional
+    public SpecialIdentity auditSpecialIdentity(Long id, String status, String reason) {
+        SpecialIdentity identity = specialIdentityMapper.selectById(id);
+        if (identity == null) {
+            throw new BusinessException("公益/特殊身份申请不存在");
+        }
+        String s = status == null ? "approved" : status;
+        if ("approved".equals(s)) {
+            requireVendorApproved(identity.getVendorId(), "公益认证");
+            identity.setDisplayOnFront(1);
+            identity.setAuditOpinion(reason);
+            identity.setRejectReason(null);
+        } else {
+            identity.setDisplayOnFront(0);
+            identity.setAuditOpinion(null);
+            identity.setRejectReason(reason);
+        }
+        identity.setStatus(s);
+        specialIdentityMapper.updateById(identity);
+        return identity;
+    }
+
+    // 四级审核连贯：资质/公益/预约的通过都要求该摊主入驻审核已通过
+    private void requireVendorApproved(Long vendorId, String scene) {
+        Vendor vendor = vendorId == null ? null : vendorMapper.selectById(vendorId);
+        if (vendor == null || !"approved".equals(vendor.getStatus())) {
+            throw new BusinessException("请先通过该摊主的入驻审核，再审批" + scene);
+        }
     }
 
     @Transactional
@@ -115,14 +162,130 @@ public class DashboardService {
     }
 
     @Transactional
-    public StallReservation auditReservation(Long id, String status) {
+    public StallReservation auditReservation(Long id, String status, String reason) {
         StallReservation reservation = stallReservationMapper.selectById(id);
         if (reservation == null) {
             throw new BusinessException("摊位预约不存在");
         }
-        reservation.setStatus(status == null ? "approved" : status);
+        String s = status == null ? "approved" : status;
+
+        if ("approved".equals(s)) {
+            if ("approved".equals(reservation.getStatus())) {
+                throw new BusinessException("该预约已通过，无需重复审批");
+            }
+            Vendor vendor = vendorMapper.selectById(reservation.getVendorId());
+            if (vendor == null || !"approved".equals(vendor.getStatus())) {
+                throw new BusinessException("请先通过该摊主的入驻审核，再审批摊位预约");
+            }
+            Stall stall = stallMapper.selectById(reservation.getStallId());
+            if (stall == null) {
+                throw new BusinessException("预约绑定的摊位不存在，无法释放");
+            }
+            if (stall.getVendorId() != null && !stall.getVendorId().equals(vendor.getId())) {
+                throw new BusinessException("该摊位已绑定其他摊主，不能释放");
+            }
+            // 审批通过即"释放"摊位：绑定摊主并置为用户端可见
+            stall.setVendorId(vendor.getId());
+            stall.setVendorName(vendor.getVendorName());
+            stall.setAuditStatus("approved");
+            stall.setBusinessStatus("open");
+            stallMapper.updateById(stall);
+            // 同一摊位下其它仍待审批的预约自动驳回，避免重复占用
+            StallReservation other = new StallReservation();
+            other.setStatus("rejected");
+            other.setRejectReason("摊位已分配给其他预约");
+            stallReservationMapper.update(other, new LambdaQueryWrapper<StallReservation>()
+                    .eq(StallReservation::getStallId, stall.getId())
+                    .eq(StallReservation::getStatus, "pending")
+                    .ne(StallReservation::getId, reservation.getId()));
+            reservation.setStatus("approved");
+            reservation.setRejectReason(null);
+        } else {
+            reservation.setStatus(s);
+            reservation.setRejectReason(reason);
+            // 若该摊位此前因本预约被释放，则回收（仅当当前绑定的就是本摊主）
+            Stall stall = stallMapper.selectById(reservation.getStallId());
+            if (stall != null && reservation.getVendorId() != null
+                    && reservation.getVendorId().equals(stall.getVendorId())
+                    && "approved".equals(stall.getAuditStatus())) {
+                stall.setVendorId(null);
+                stall.setVendorName(null);
+                stall.setAuditStatus("pending");
+                stall.setBusinessStatus("closed");
+                stallMapper.updateById(stall);
+            }
+        }
         stallReservationMapper.updateById(reservation);
         return reservation;
+    }
+
+    // ===== 审核队列（带摊主名称，供后台列表展示）=====
+
+    private Map<Long, String> vendorNames() {
+        return vendorMapper.selectList(null).stream()
+                .collect(Collectors.toMap(Vendor::getId, Vendor::getVendorName, (a, b) -> a));
+    }
+
+    public PageResult<Map<String, Object>> qualificationQueue() {
+        Map<Long, String> names = vendorNames();
+        List<Map<String, Object>> rows = qualificationMapper.selectList(
+                        new LambdaQueryWrapper<Qualification>().orderByDesc(Qualification::getId)).stream()
+                .map(q -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", q.getId());
+                    row.put("vendorId", q.getVendorId());
+                    row.put("vendorName", names.get(q.getVendorId()));
+                    row.put("qualificationType", q.getQualificationType());
+                    row.put("mediaUrl", q.getMediaUrl());
+                    row.put("status", q.getStatus());
+                    row.put("rejectReason", q.getRejectReason());
+                    row.put("updatedAt", q.getUpdatedAt());
+                    return row;
+                })
+                .collect(Collectors.toList());
+        return PageResult.of(rows);
+    }
+
+    public PageResult<Map<String, Object>> specialIdentityQueue() {
+        Map<Long, String> names = vendorNames();
+        List<Map<String, Object>> rows = specialIdentityMapper.selectList(
+                        new LambdaQueryWrapper<SpecialIdentity>().orderByDesc(SpecialIdentity::getId)).stream()
+                .map(si -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", si.getId());
+                    row.put("vendorId", si.getVendorId());
+                    row.put("vendorName", names.get(si.getVendorId()));
+                    row.put("identityType", si.getIdentityType());
+                    row.put("publicWelfareTagId", si.getPublicWelfareTagId());
+                    row.put("status", si.getStatus());
+                    row.put("displayOnFront", si.getDisplayOnFront());
+                    row.put("rejectReason", si.getRejectReason());
+                    row.put("updatedAt", si.getUpdatedAt());
+                    return row;
+                })
+                .collect(Collectors.toList());
+        return PageResult.of(rows);
+    }
+
+    public PageResult<Map<String, Object>> reservationQueue() {
+        Map<Long, String> names = vendorNames();
+        Map<Long, String> stallNames = stallMapper.selectList(null).stream()
+                .collect(Collectors.toMap(Stall::getId, Stall::getStallName, (a, b) -> a));
+        List<Map<String, Object>> rows = stallReservationMapper.selectList(
+                        new LambdaQueryWrapper<StallReservation>().orderByDesc(StallReservation::getId)).stream()
+                .map(r -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", r.getId());
+                    row.put("vendorId", r.getVendorId());
+                    row.put("vendorName", names.get(r.getVendorId()));
+                    row.put("stallId", r.getStallId());
+                    row.put("stallName", stallNames.get(r.getStallId()));
+                    row.put("status", r.getStatus());
+                    row.put("updatedAt", r.getUpdatedAt());
+                    return row;
+                })
+                .collect(Collectors.toList());
+        return PageResult.of(rows);
     }
 
     @Transactional

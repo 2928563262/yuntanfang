@@ -124,7 +124,7 @@ const quickActions = [
 ]
 
 function statusText(s: string) {
-  return s === 'open' ? '营业中' : s === 'closed' ? '休息中' : s
+  return s === 'open' ? '营业中' : s === 'closed' ? '休息中' : '暂未营业'
 }
 
 const filteredStalls = computed(() => {

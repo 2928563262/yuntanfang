@@ -6,6 +6,8 @@ import com.yuntanfang.module.complaint.entity.Complaint;
 import com.yuntanfang.module.dashboard.entity.Policy;
 import com.yuntanfang.module.dashboard.service.DashboardService;
 import com.yuntanfang.module.stall.entity.Area;
+import com.yuntanfang.module.vendor.entity.Qualification;
+import com.yuntanfang.module.vendor.entity.SpecialIdentity;
 import com.yuntanfang.module.vendor.entity.StallReservation;
 import com.yuntanfang.module.vendor.entity.Vendor;
 import lombok.RequiredArgsConstructor;
@@ -43,17 +45,32 @@ public class AdminController {
 
     @PutMapping("/vendors/applications/{id}/audit")
     public ApiResponse<Vendor> auditVendor(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return ApiResponse.ok(dashboardService.auditVendor(id, str(body, "status")));
+        return ApiResponse.ok(dashboardService.auditVendor(id, str(body, "status"), str(body, "reason")));
     }
 
-    @GetMapping("/{module}")
-    public ApiResponse<PageResult<?>> list(@PathVariable String module) {
-        return ApiResponse.ok(dashboardService.list(module));
+    @GetMapping("/qualifications")
+    public ApiResponse<PageResult<Map<String, Object>>> qualifications() {
+        return ApiResponse.ok(dashboardService.qualificationQueue());
     }
 
-    @PutMapping("/{module}/{id}/audit")
-    public ApiResponse<Vendor> audit(@PathVariable String module, @PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return ApiResponse.ok(dashboardService.auditVendor(id, str(body, "status")));
+    @PutMapping("/qualifications/{id}/audit")
+    public ApiResponse<Qualification> auditQualification(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        return ApiResponse.ok(dashboardService.auditQualification(id, str(body, "status"), str(body, "reason")));
+    }
+
+    @GetMapping("/special-identities")
+    public ApiResponse<PageResult<Map<String, Object>>> specialIdentities() {
+        return ApiResponse.ok(dashboardService.specialIdentityQueue());
+    }
+
+    @PutMapping("/special-identities/{id}/audit")
+    public ApiResponse<SpecialIdentity> auditSpecialIdentity(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        return ApiResponse.ok(dashboardService.auditSpecialIdentity(id, str(body, "status"), str(body, "reason")));
+    }
+
+    @GetMapping("/stall-reservations")
+    public ApiResponse<PageResult<Map<String, Object>>> stallReservations() {
+        return ApiResponse.ok(dashboardService.reservationQueue());
     }
 
     @PostMapping("/areas")
@@ -68,7 +85,7 @@ public class AdminController {
 
     @PutMapping("/stall-reservations/{id}/audit")
     public ApiResponse<StallReservation> auditReservation(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return ApiResponse.ok(dashboardService.auditReservation(id, str(body, "status")));
+        return ApiResponse.ok(dashboardService.auditReservation(id, str(body, "status"), str(body, "reason")));
     }
 
     @PutMapping("/complaints/{id}/assign")
